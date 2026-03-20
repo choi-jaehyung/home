@@ -12,15 +12,46 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans, Arial, Helvetica, sans-serif);
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+/* Article content styles */
+.prose-article {
+  @apply max-w-none;
+}
+
+.prose-article h1,
+.prose-article h2,
+.prose-article h3 {
+  @apply font-semibold tracking-tight text-gray-900 mt-8 mb-4;
+}
+
+.prose-article p {
+  @apply text-gray-600 leading-relaxed mb-4;
+}
+
+.prose-article a {
+  @apply text-gray-900 underline underline-offset-2 hover:opacity-70;
+}
+
+.prose-article code {
+  @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+.prose-article pre {
+  @apply bg-gray-50 border border-gray-100 rounded-xl p-4 overflow-x-auto mb-4;
+}
+
+.prose-article blockquote {
+  @apply border-l-4 border-gray-200 pl-4 text-gray-500 italic my-4;
 }

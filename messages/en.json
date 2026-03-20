@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "career": "Career",
+    "articles": "Articles"
+  },
+  "home": {
+    "hero_title": "Hello",
+    "hero_subtitle": "CEO · Entrepreneur · Writer",
+    "hero_description": "Exploring new possibilities at the intersection of technology and business.",
+    "recent_articles": "Recent Articles",
+    "view_all": "View All"
+  },
+  "about": {
+    "title": "About",
+    "profile": "Profile",
+    "skills": "Core Skills",
+    "contact": "Contact"
+  },
+  "career": {
+    "title": "Career",
+    "download_resume": "Download Resume"
+  },
+  "articles": {
+    "title": "Articles",
+    "all": "All",
+    "search_placeholder": "Search...",
+    "no_results": "No articles found for this tag."
+  },
+  "footer": {
+    "rights": "All rights reserved."
+  }
+}
