@@ -24,6 +24,7 @@
   },
   "articles": {
     "title": "記事",
+    "back": "記事一覧",
     "all": "すべて",
     "search_placeholder": "検索...",
     "no_results": "このタグの記事はありません。"

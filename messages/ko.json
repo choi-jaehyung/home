@@ -24,6 +24,7 @@
   },
   "articles": {
     "title": "글",
+    "back": "글 목록",
     "all": "전체",
     "search_placeholder": "검색...",
     "no_results": "해당 태그의 글이 없습니다."

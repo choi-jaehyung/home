@@ -92,7 +92,7 @@ export default async function ArticlePage({ params }: Props) {
             href={`/${locale}/articles`}
             className="inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors mb-8"
           >
-            ← {t("title")}
+            ← {t("back")}
           </Link>
 
           <div className="flex flex-wrap gap-2 mb-5">
