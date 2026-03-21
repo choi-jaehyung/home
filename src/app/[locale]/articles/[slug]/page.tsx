@@ -64,10 +64,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export async function generateStaticParams() {
-  return [];
-}
-
 export default async function ArticlePage({ params }: Props) {
   const { locale, slug: rawSlug } = await params;
   const slug = decodeURIComponent(rawSlug);
