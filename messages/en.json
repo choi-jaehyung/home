@@ -24,7 +24,7 @@
   },
   "articles": {
     "title": "Articles",
-    "back": "Articles",
+    "back": "Lists",
     "all": "All",
     "search_placeholder": "Search...",
     "no_results": "No articles found for this tag."
