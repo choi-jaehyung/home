@@ -8,14 +8,14 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-line-seed);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans, Arial, Helvetica, sans-serif);
+  font-family: var(--font-line-seed, Arial, Helvetica, sans-serif);
 }
 
 /* Smooth transitions */
@@ -37,7 +37,8 @@ body {
 }
 
 .prose-article p {
-  @apply text-gray-600 leading-relaxed mb-4;
+  @apply text-gray-600;
+  margin-bottom: var(--para-spacing, 1rem);
 }
 
 .prose-article a {
@@ -54,4 +55,45 @@ body {
 
 .prose-article blockquote {
   @apply border-l-4 border-gray-200 pl-4 text-gray-500 italic my-4;
+}
+
+/* LaTeX block spacing */
+.prose-article .katex-display {
+  margin: 1.5em 0;
+}
+
+/* Table */
+.prose-article table {
+  border-collapse: collapse;
+  margin: 1.5em auto;
+  font-size: 0.875rem;
+}
+
+.prose-article th,
+.prose-article td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 1rem;
+  text-align: center;
+}
+
+/* 양 가장자리(좌우 외곽선) 제거 */
+.prose-article th:first-child,
+.prose-article td:first-child {
+  border-left: none;
+}
+
+.prose-article th:last-child,
+.prose-article td:last-child {
+  border-right: none;
+}
+
+/* 헤더 음영 */
+.prose-article th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.prose-article td {
+  color: #4b5563;
 }

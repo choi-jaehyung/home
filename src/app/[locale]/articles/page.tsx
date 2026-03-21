@@ -26,10 +26,10 @@ export default async function ArticlesPage({ params, searchParams }: Props) {
   const filtered = tag ? posts.filter((p) => p.tags.includes(tag)) : posts;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
       <div className="mb-10">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-1">
-          {t("title")}
+          Writings
         </h1>
         <p className="text-sm text-gray-400">{posts.length}개의 글</p>
       </div>

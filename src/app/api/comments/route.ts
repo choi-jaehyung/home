@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
   if (!slug) return NextResponse.json({ error: "slug required" }, { status: 400 });
 
   const supabase = await createServerSupabaseClient();
+  if (!supabase) return NextResponse.json({ comments: [] });
   const { data, error } = await supabase
     .from("comments")
     .select("id, user_name, user_avatar, content, created_at")
@@ -23,6 +24,7 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = await createServerSupabaseClient();
+  if (!supabase) return NextResponse.json({ error: "서비스 준비 중입니다." }, { status: 503 });
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -53,6 +55,7 @@ export async function DELETE(request: NextRequest) {
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   const supabase = await createServerSupabaseClient();
+  if (!supabase) return NextResponse.json({ error: "서비스 준비 중입니다." }, { status: 503 });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

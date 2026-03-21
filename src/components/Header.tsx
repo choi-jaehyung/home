@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 type Props = {
@@ -10,15 +10,14 @@ type Props = {
 };
 
 export default function Header({ locale }: Props) {
-  const t = useTranslations("nav");
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const navLinks = [
-    { href: `/${locale}`, label: t("home") },
-    { href: `/${locale}/about`, label: t("about") },
-    { href: `/${locale}/career`, label: t("career") },
-    { href: `/${locale}/articles`, label: t("articles") },
+    { href: `/${locale}`, label: "Home" },
+    { href: `/${locale}/about`, label: "About" },
+    { href: `/${locale}/career`, label: "Career" },
+    { href: `/${locale}/articles`, label: "Writings" },
   ];
 
   const locales = [
@@ -36,28 +35,35 @@ export default function Header({ locale }: Props) {
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-gray-100">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-[4.6rem]">
           <Link
             href={`/${locale}`}
-            className="text-lg font-semibold tracking-tight hover:opacity-70 transition-opacity"
+            className="hover:opacity-70 transition-opacity"
           >
-            Jaehyung Choi
+            <Image
+              src="/logo.png"
+              alt="Jaehyung Choi"
+              width={120}
+              height={40}
+              className="h-14 w-auto object-contain"
+              priority
+            />
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-6">
-            {navLinks.slice(1).map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`text-sm transition-colors hover:text-black ${
-                  pathname === link.href
-                    ? "text-black font-medium"
-                    : "text-gray-500"
-                }`}
-              >
-                {link.label}
-              </Link>
+          <nav className="hidden md:flex items-center gap-8">
+            {navLinks.slice(1).map((link, idx) => (
+              <span key={link.href} className="flex items-center gap-8">
+                {idx > 0 && <span className="text-gray-400 font-light select-none">|</span>}
+                <Link
+                  href={link.href}
+                  className={`text-base font-bold transition-colors hover:text-black ${
+                    pathname === link.href ? "text-black" : "text-gray-500"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              </span>
             ))}
           </nav>
 

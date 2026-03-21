@@ -1,123 +1,222 @@
-import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
 type Props = {
   params: Promise<{ locale: string }>;
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "career" });
-  return { title: t("title") };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: "Career" };
 }
 
-const careers = [
+type Highlight = { text: string; link?: string };
+
+type Project = {
+  name: string;
+  period?: string;
+  note?: string;
+  highlights: Highlight[];
+};
+
+type Career = {
+  company: string;
+  role: string;
+  period: string;
+  location: string;
+  current?: boolean;
+  projects: Project[];
+};
+
+const careers: Career[] = [
   {
-    company: "회사명 A",
-    role: "대표이사 / CEO",
-    period: "2022.01 — 현재",
+    company: "LINE Group / LINE NEXT",
+    role: "CFO",
+    period: "2014 – Present",
+    location: "Seoul · Tokyo (주재원 ~2024)",
     current: true,
-    description:
-      "회사 소개 및 주요 업무 내용을 여기에 작성합니다. 어떤 제품을 만들었고, 어떤 성과를 냈는지 간략히 기술합니다.",
-    tags: ["스타트업", "AI", "B2B"],
+    projects: [
+      {
+        name: "LINE NEXT",
+        period: "2022 – 현재",
+        highlights: [
+          { text: "Web3 전문기업 LINE NEXT CFO 취임" },
+          { text: "Crescendo(PE)로부터 1,800억원 투자 유치 리드", link: "https://n.news.naver.com/article/366/0000954577" },
+        ],
+      },
+      {
+        name: "LINE Pay Japan",
+        period: "2014 – 2023",
+        highlights: [
+          { text: "일본 자금결제법 사업면허 취득 리드 (2014)" },
+          { text: "LINE Pay Japan CFO 취임" },
+          { text: "대만 LINE Pay 법인 대만증권시장 상장 지원" },
+        ],
+      },
+      {
+        name: "LINE Xenesis",
+        period: "2018 – 현재",
+        note: "겸직",
+        highlights: [
+          { text: "일본 가상화폐 거래소 LINE Xenesis 설립 및 재무 셋업" },
+          { text: "LINE Xenesis CFO 취임" },
+        ],
+      },
+    ],
   },
   {
-    company: "회사명 B",
-    role: "Product Manager",
-    period: "2019.03 — 2021.12",
-    current: false,
-    description:
-      "담당했던 제품과 역할, 주요 성과를 기술합니다. 팀 규모나 프로젝트 규모를 언급하면 좋습니다.",
-    tags: ["제품 기획", "데이터 분석"],
+    company: "Naver",
+    role: "Finance / CFO 직속",
+    period: "2008 – 2014",
+    location: "Seoul · Tokyo (주재원 2012~)",
+    projects: [
+      {
+        name: "Naver Corp (당시 NHN)",
+        period: "2008 – 2009",
+        highlights: [
+          { text: "네이버 쇼핑부문 경영계획 수립 및 예산관리" },
+        ],
+      },
+      {
+        name: "Naver Business Platform",
+        period: "2009 – 2012",
+        highlights: [
+          { text: "물적분할을 통한 자회사 설립 — 現 네이버 클라우드 · 네이버 파이낸셜" },
+        ],
+      },
+      {
+        name: "일본 주재원 · LINE Pay",
+        period: "2012 – 2014",
+        highlights: [
+          { text: "일본 주재원 파견 — LINE 사업 초기 한국 본사 연결 역할" },
+          { text: "LINE Pay 사업 런칭 PM 및 일본 결제 라이센스 취득 프로젝트 리드" },
+        ],
+      },
+    ],
   },
   {
-    company: "회사명 C",
-    role: "Software Engineer",
-    period: "2016.07 — 2019.02",
-    current: false,
-    description:
-      "개발자로 일했던 경험을 기술합니다. 사용한 기술 스택이나 주요 프로젝트를 언급합니다.",
-    tags: ["Backend", "Python", "AWS"],
+    company: "Samsung Electronics",
+    role: "LCD 총괄 (現 삼성디스플레이) 재무팀",
+    period: "2005 – 2008",
+    location: "Giheung · Cheonan · Tangjung",
+    projects: [
+      {
+        name: "LCD 총괄 재무",
+        highlights: [
+          { text: "제품별 매출원가 결산 및 보고" },
+          { text: "생산 Capa · 수율에 따른 장단기 계획 시뮬레이션" },
+          { text: "Target Cost Management" },
+        ],
+      },
+    ],
   },
 ];
 
 export default async function CareerPage({ params }: Props) {
-  const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "career" });
+  await params;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+
       {/* Header */}
-      <div className="flex items-start justify-between mb-14">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-2">
-            {t("title")}
-          </h1>
-          <p className="text-gray-400 text-sm">{careers.length}개 직장 · {new Date().getFullYear() - 2016}년 경력</p>
-        </div>
-        <a
-          href="/resume.pdf"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-full hover:bg-gray-700 transition-colors shadow-sm"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          {t("download_resume")}
-        </a>
+      <div className="mb-14">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-2">Career</h1>
+        <p className="text-gray-400 text-sm">20여년 간의 재무·경영 경력</p>
       </div>
 
       {/* Timeline */}
-      <div className="space-y-6">
-        {careers.map((career, idx) => (
-          <div
-            key={idx}
-            className={`relative rounded-2xl p-6 sm:p-8 border transition-all ${
-              career.current
-                ? "bg-gray-900 border-gray-800 text-white"
-                : "bg-gray-50 border-gray-100 hover:border-gray-200 hover:bg-white hover:shadow-sm"
-            }`}
-          >
-            {career.current && (
-              <span className="absolute top-6 right-6 inline-flex items-center gap-1.5 text-xs font-medium text-green-400 bg-green-400/10 px-2.5 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                재직 중
-              </span>
-            )}
+      <div className="relative">
+        {/* Vertical line */}
+        <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gray-200" />
 
-            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-6 mb-3">
-              <div className="flex-1">
-                <h2 className={`text-lg font-semibold mb-0.5 ${career.current ? "text-white" : "text-gray-900"}`}>
-                  {career.company}
-                </h2>
-                <p className={`text-sm font-medium ${career.current ? "text-gray-400" : "text-gray-500"}`}>
-                  {career.role}
-                </p>
+        <div className="space-y-12">
+          {careers.map((career, idx) => (
+            <div key={idx} className="relative pl-10">
+              {/* Dot */}
+              <div className={`absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${
+                career.current
+                  ? "bg-gray-900 border-gray-900"
+                  : "bg-white border-gray-400"
+              }`} />
+
+              {/* Period */}
+              <p className="text-xs font-mono text-gray-400 mb-2 tracking-wider">{career.period}</p>
+
+              {/* Company & Role */}
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
+                <span className="text-xl font-bold text-gray-900">{career.company}</span>
+                {career.current && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    재직 중
+                  </span>
+                )}
               </div>
-              <span className={`text-xs flex-shrink-0 mt-0.5 ${career.current ? "text-gray-500" : "text-gray-400"}`}>
-                {career.period}
-              </span>
+              <div className="mb-1">
+                <span className="text-sm font-medium text-gray-500">{career.role}</span>
+              </div>
+              <p className="text-xs text-gray-400 mb-6">{career.location}</p>
+
+              {/* Projects */}
+              <div className="space-y-4">
+                {career.projects.map((project, pIdx) => (
+                  <div key={pIdx} className="rounded-xl border border-gray-100 bg-gray-50 px-5 py-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-semibold text-gray-700">{project.name}</span>
+                      {project.period && (
+                        <span className="text-xs text-gray-400 font-mono">{project.period}</span>
+                      )}
+                      {project.note && (
+                        <span className="text-xs text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded">{project.note}</span>
+                      )}
+                    </div>
+                    <ul className="space-y-2">
+                      {project.highlights.map((h, hIdx) => (
+                        <li key={hIdx} className="flex items-start gap-2.5 text-sm text-gray-600 leading-relaxed">
+                          <span className="mt-2 w-1 h-1 rounded-full bg-gray-400 flex-shrink-0" />
+                          {h.link ? (
+                            <span>
+                              {h.text}{" "}
+                              <a
+                                href={h.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-gray-400 hover:text-gray-700 underline underline-offset-2 text-xs transition-colors"
+                              >
+                                [기사]
+                              </a>
+                            </span>
+                          ) : h.text}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
             </div>
+          ))}
 
-            <p className={`text-sm leading-relaxed mb-5 ${career.current ? "text-gray-300" : "text-gray-600"}`}>
-              {career.description}
-            </p>
-
-            <div className="flex flex-wrap gap-2">
-              {career.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className={`text-xs px-2.5 py-1 rounded-full ${
-                    career.current
-                      ? "bg-white/10 text-gray-300"
-                      : "bg-white border border-gray-200 text-gray-500"
-                  }`}
-                >
-                  {tag}
-                </span>
-              ))}
+          {/* Education */}
+          <div className="relative pl-10">
+            <div className="absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full bg-white border-2 border-gray-300 flex-shrink-0" />
+            <p className="text-xs font-mono text-gray-400 mb-2 tracking-wider">2000 – 2005</p>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
+              <span className="text-xl font-bold text-gray-900">Yonsei University</span>
+              <span className="text-sm font-medium text-gray-500">경영학과</span>
+            </div>
+            <p className="text-xs text-gray-400 mb-6">Seoul</p>
+            <div className="rounded-xl border border-gray-100 bg-gray-50 px-5 py-4">
+              <ul className="space-y-2">
+                <li className="flex items-start gap-2.5 text-sm text-gray-600 leading-relaxed">
+                  <span className="mt-2 w-1 h-1 rounded-full bg-gray-400 flex-shrink-0" />
+                  2005년 2월 졸업
+                </li>
+                <li className="flex items-start gap-2.5 text-sm text-gray-600 leading-relaxed">
+                  <span className="mt-2 w-1 h-1 rounded-full bg-gray-400 flex-shrink-0" />
+                  Yonsei Venture 회장 역임
+                </li>
+              </ul>
             </div>
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );

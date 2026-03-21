@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 async function getSessionId(): Promise<string> {
   const cookieStore = await cookies();
-  let sessionId = cookieStore.get("session_id")?.value;
-  if (!sessionId) {
-    sessionId = randomUUID();
-  }
-  return sessionId;
+  return cookieStore.get("session_id")?.value ?? randomUUID();
+}
+
+function withSessionCookie(response: NextResponse, sessionId: string): NextResponse {
+  response.cookies.set("session_id", sessionId, {
+    httpOnly: true,
+    maxAge: 60 * 60 * 24 * 365,
+    path: "/",
+  });
+  return response;
 }
 
 export async function GET(request: NextRequest) {
@@ -17,6 +22,8 @@ export async function GET(request: NextRequest) {
   if (!slug) return NextResponse.json({ error: "slug required" }, { status: 400 });
 
   const supabase = await createServerSupabaseClient();
+  if (!supabase) return NextResponse.json({ count: 0, liked: false });
+
   const sessionId = await getSessionId();
 
   const { count } = await supabase
@@ -31,13 +38,10 @@ export async function GET(request: NextRequest) {
     .eq("session_id", sessionId)
     .single();
 
-  const response = NextResponse.json({ count: count ?? 0, liked: !!myLike });
-  response.cookies.set("session_id", sessionId, {
-    httpOnly: true,
-    maxAge: 60 * 60 * 24 * 365,
-    path: "/",
-  });
-  return response;
+  return withSessionCookie(
+    NextResponse.json({ count: count ?? 0, liked: !!myLike }),
+    sessionId
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -45,6 +49,8 @@ export async function POST(request: NextRequest) {
   if (!slug) return NextResponse.json({ error: "slug required" }, { status: 400 });
 
   const supabase = await createServerSupabaseClient();
+  if (!supabase) return NextResponse.json({ count: 0, liked: false });
+
   const sessionId = await getSessionId();
 
   const { data: existing } = await supabase
@@ -65,11 +71,8 @@ export async function POST(request: NextRequest) {
     .select("*", { count: "exact", head: true })
     .eq("slug", slug);
 
-  const response = NextResponse.json({ count: count ?? 0, liked: !existing });
-  response.cookies.set("session_id", sessionId, {
-    httpOnly: true,
-    maxAge: 60 * 60 * 24 * 365,
-    path: "/",
-  });
-  return response;
+  return withSessionCookie(
+    NextResponse.json({ count: count ?? 0, liked: !existing }),
+    sessionId
+  );
 }

@@ -1,94 +1,91 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { getPostsByLocale } from "@/lib/posts";
-import type { Metadata } from "next";
+import { getPostsByLocale, getAllTags } from "@/lib/posts";
 
 type Props = {
   params: Promise<{ locale: string }>;
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "home" });
-  return { title: t("hero_title") };
-}
-
 export default async function HomePage({ params }: Props) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "home" });
-  const tNav = await getTranslations({ locale, namespace: "nav" });
 
-  const recentPosts = getPostsByLocale(locale).slice(0, 3);
+  const recentPosts = getPostsByLocale(locale).slice(0, 5);
+  const tags = getAllTags(locale);
 
   return (
     <div>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-24 sm:py-36">
-        {/* Background decoration */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-gray-100 to-transparent rounded-full blur-3xl opacity-60" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-gray-100 to-transparent rounded-full blur-3xl opacity-40" />
+      {/* ── Hero ─────────────────────────────────────────── */}
+      <section className="relative min-h-[70svh] flex flex-col justify-center overflow-hidden">
+
+        {/* Background photo */}
+        <Image
+          src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=1920&q=85&auto=format&fit=crop"
+          alt="Mountain landscape"
+          fill
+          className="object-cover object-center -z-10"
+          priority
+        />
+        {/* Warm light overlay for text readability */}
+        <div className="absolute inset-0 -z-10 bg-white/30" />
+
+        {/* Hero text */}
+        <div className="max-w-3xl mx-auto px-6 text-center pb-24 sm:pb-32">
+          <h1 className="text-4xl sm:text-6xl font-bold text-stone-800 leading-tight tracking-tight mb-6">
+            Writing things down,<br />
+            <span className="italic text-stone-600">as freely as I can.</span>
+          </h1>
+          <p className="text-base sm:text-lg text-stone-700 leading-relaxed max-w-xl mx-auto mb-10">
+            Whatever&apos;s on my mind — books, ideas, and questions I can&apos;t shake.
+          </p>
+          <Link
+            href={`/${locale}/articles`}
+            className="inline-flex items-center gap-2 px-6 py-3 border border-stone-400 text-stone-700 text-sm font-medium rounded-full hover:border-stone-600 hover:text-stone-900 hover:bg-white/40 transition-all duration-200"
+          >
+            Read the notes
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row items-start gap-10 sm:gap-16">
-            {/* Profile Image */}
-            <div className="flex-shrink-0">
-              <div className="relative w-32 h-32 sm:w-40 sm:h-40">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 blur-md scale-105 opacity-50" />
-                <div className="relative w-full h-full rounded-full overflow-hidden ring-4 ring-white shadow-xl">
-                  <Image
-                    src="/profile.png"
-                    alt="Jaehyung Choi"
-                    width={160}
-                    height={160}
-                    className="w-full h-full object-cover"
-                    priority
-                  />
-                </div>
-              </div>
-            </div>
+        {/* Scroll hint */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-stone-400 animate-bounce">
+          <span className="text-xs tracking-widest uppercase">scroll</span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </section>
 
-            {/* Text */}
-            <div className="max-w-xl">
-              <span className="inline-flex items-center gap-2 text-xs font-medium text-gray-500 tracking-widest uppercase bg-gray-100 px-3 py-1.5 rounded-full mb-5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                {t("hero_subtitle")}
-              </span>
-              <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 mb-5 leading-tight">
-                {t("hero_title")}
-              </h1>
-              <p className="text-lg text-gray-500 leading-relaxed mb-8">
-                {t("hero_description")}
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href={`/${locale}/about`}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-full hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  {tNav("about")}
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-                <Link
-                  href={`/${locale}/articles`}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-full hover:border-gray-400 hover:text-gray-900 transition-colors"
-                >
-                  {tNav("articles")}
-                </Link>
-              </div>
-            </div>
+      {/* ── Tags ─────────────────────────────────────────── */}
+      <section className="py-16 sm:py-20 bg-white">
+        <div className="max-w-4xl mx-auto px-6">
+          <p className="text-base font-bold tracking-[0.2em] text-gray-500 uppercase mb-8">
+            Topics
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            {tags.map((tag) => (
+              <Link
+                key={tag}
+                href={`/${locale}/articles?tag=${encodeURIComponent(tag)}`}
+                className="px-4 py-2 rounded-full border border-gray-200 text-sm text-gray-600 hover:border-gray-800 hover:text-gray-900 transition-all duration-150"
+              >
+                #{tag}
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Recent Articles */}
-      <section className="py-16 bg-gray-50/60">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-semibold text-gray-900">{t("recent_articles")}</h2>
+      {/* ── Recent Articles ───────────────────────────────── */}
+      <section className="py-20 sm:py-28 bg-gray-50">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="flex items-center justify-between mb-10">
+            <p className="text-base font-bold tracking-[0.2em] text-gray-500 uppercase">
+              Recent Articles
+            </p>
             <Link
               href={`/${locale}/articles`}
               className="text-sm text-gray-400 hover:text-gray-900 transition-colors flex items-center gap-1"
@@ -132,7 +129,7 @@ export default async function HomePage({ params }: Props) {
                       <span className="text-xs text-gray-400">
                         {new Date(post.date).toLocaleDateString(
                           locale === "ko" ? "ko-KR" : locale === "ja" ? "ja-JP" : "en-US",
-                          { month: "short", day: "numeric" }
+                          { year: "numeric", month: "short", day: "numeric" }
                         )}
                       </span>
                       <span className="text-gray-300 group-hover:text-gray-600 transition-colors text-lg">→</span>
@@ -142,6 +139,24 @@ export default async function HomePage({ params }: Props) {
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* ── Closing line ─────────────────────────────────── */}
+      <section className="py-16 bg-white text-center">
+        <div className="max-w-xl mx-auto px-6">
+          <p className="text-sm text-gray-400 leading-relaxed">
+            Working in Seoul. Occasionally in Tokyo and San Francisco.
+          </p>
+          <Link
+            href={`/${locale}/about`}
+            className="inline-flex items-center gap-1 mt-4 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            More about me
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
       </section>
     </div>
