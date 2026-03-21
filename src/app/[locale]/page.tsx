@@ -20,18 +20,20 @@ export default async function HomePage({ params }: Props) {
       <section className="relative min-h-[70svh] flex flex-col justify-center overflow-hidden">
 
         {/* Background photo */}
-        <Image
-          src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=1920&q=85&auto=format&fit=crop"
-          alt="Mountain landscape"
-          fill
-          className="object-cover object-center -z-10"
-          priority
-        />
+        <div className="absolute inset-0">
+          <Image
+            src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=1920&q=85&auto=format&fit=crop"
+            alt="Mountain landscape"
+            fill
+            className="object-cover object-center"
+            priority
+          />
+        </div>
         {/* Warm light overlay for text readability */}
-        <div className="absolute inset-0 -z-10 bg-white/30" />
+        <div className="absolute inset-0 bg-white/30" />
 
         {/* Hero text */}
-        <div className="max-w-3xl mx-auto px-6 text-center pb-24 sm:pb-32">
+        <div className="relative z-10 max-w-3xl mx-auto px-6 text-center pb-24 sm:pb-32">
           <h1 className="text-4xl sm:text-6xl font-bold text-stone-800 leading-tight tracking-tight mb-6">
             Writing things down,<br />
             <span className="italic text-stone-600">as freely as I can.</span>
@@ -51,7 +53,7 @@ export default async function HomePage({ params }: Props) {
         </div>
 
         {/* Scroll hint */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-stone-400 animate-bounce">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-stone-400 animate-bounce z-10">
           <span className="text-xs tracking-widest uppercase">scroll</span>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
