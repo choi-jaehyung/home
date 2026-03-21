@@ -66,14 +66,14 @@ export default async function AboutPage({ params }: Props) {
 
       {/* ── Hero ───────────────────────────────────────── */}
       <section className="max-w-4xl mx-auto px-6 pt-20 pb-16 flex flex-col sm:flex-row items-stretch gap-10">
-        <div className="flex-shrink-0 self-stretch">
-          <div className="h-full min-h-[8rem] rounded-2xl overflow-hidden ring-2 ring-white/10 shadow-2xl w-28 sm:w-36">
+        <div className="flex-shrink-0">
+          <div className="rounded-2xl overflow-hidden ring-2 ring-white/10 shadow-2xl w-28 sm:w-36">
             <Image
               src="/profile.png"
               alt="Jaehyung Choi"
               width={144}
               height={400}
-              className="w-full h-full object-cover object-top"
+              className="w-full h-auto object-cover object-top"
             />
           </div>
         </div>
