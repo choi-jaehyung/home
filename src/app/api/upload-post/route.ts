@@ -11,7 +11,7 @@ async function verifyAdmin(): Promise<boolean> {
   const supabase = await createServerSupabaseClient();
   if (!supabase) return false;
   const { data: { user } } = await supabase.auth.getUser();
-  return !!user && user.email === ADMIN_EMAIL;
+  return !!user && user.email === ADMIN_EMAIL?.trim();
 }
 
 function githubHeaders() {
