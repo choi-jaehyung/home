@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { getPostsByLocale, getAllTags } from "@/lib/posts";
+import { getPostsByLocale, getTopTags } from "@/lib/posts";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -12,7 +12,7 @@ export default async function HomePage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: "home" });
 
   const recentPosts = getPostsByLocale(locale).slice(0, 5);
-  const tags = getAllTags(locale);
+  const tags = getTopTags(locale, 20);
 
   return (
     <div>
@@ -147,12 +147,9 @@ export default async function HomePage({ params }: Props) {
       {/* ── Closing line ─────────────────────────────────── */}
       <section className="py-16 bg-white text-center">
         <div className="max-w-xl mx-auto px-6">
-          <p className="text-sm text-gray-400 leading-relaxed">
-            Working in Seoul. Occasionally in Tokyo and San Francisco.
-          </p>
           <Link
             href={`/${locale}/about`}
-            className="inline-flex items-center gap-1 mt-4 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 transition-colors"
           >
             More about me
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -149,3 +149,22 @@ export function getAllTags(locale: string): string[] {
   posts.forEach((p) => p.tags.forEach((t) => tagSet.add(t)));
   return Array.from(tagSet);
 }
+
+export function getTopTags(locale: string, limit = 20): string[] {
+  const posts = getPostsByLocale(locale);
+  const countMap = new Map<string, { count: number; date: string }>();
+  for (const post of posts) {
+    for (const tag of post.tags) {
+      const existing = countMap.get(tag);
+      if (!existing || post.date > existing.date) {
+        countMap.set(tag, { count: (existing?.count ?? 0) + 1, date: post.date });
+      } else {
+        countMap.set(tag, { count: existing.count + 1, date: existing.date });
+      }
+    }
+  }
+  return Array.from(countMap.entries())
+    .sort((a, b) => b[1].count - a[1].count || b[1].date.localeCompare(a[1].date))
+    .slice(0, limit)
+    .map(([tag]) => tag);
+}

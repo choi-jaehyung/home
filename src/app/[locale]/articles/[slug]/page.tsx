@@ -136,7 +136,7 @@ export default async function ArticlePage({ params }: Props) {
           <LikeButton slug={slug} />
         </div>
 
-        <div className="max-w-2xl">
+        <div className="w-full">
           <CommentSection slug={slug} locale={locale} />
         </div>
       </div>

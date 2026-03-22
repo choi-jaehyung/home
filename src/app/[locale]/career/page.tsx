@@ -200,6 +200,8 @@ export default async function CareerPage({ params }: Props) {
             <p className="text-xs font-mono text-gray-400 mb-2 tracking-wider">2000 – 2005</p>
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
               <span className="text-xl font-bold text-gray-900">Yonsei University</span>
+            </div>
+            <div className="mb-1">
               <span className="text-sm font-medium text-gray-500">경영학과</span>
             </div>
             <p className="text-xs text-gray-400 mb-6">Seoul</p>
