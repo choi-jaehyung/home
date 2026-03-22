@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createClient } from "@supabase/supabase-js";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_OWNER = process.env.GITHUB_OWNER;
@@ -9,19 +9,14 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 async function verifyAdmin(request: NextRequest): Promise<boolean> {
   if (!ADMIN_EMAIL) return false;
 
-  // Authorization 헤더 토큰 우선 (쿠키 세션이 없는 경우 대응)
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
-  if (token) {
-    const supabase = await createServerSupabaseClient();
-    if (!supabase) return false;
-    const { data: { user } } = await supabase.auth.getUser(token);
-    return !!user && user.email === ADMIN_EMAIL.trim();
-  }
+  if (!token) return false;
 
-  // 쿠키 세션 폴백
-  const supabase = await createServerSupabaseClient();
-  if (!supabase) return false;
-  const { data: { user } } = await supabase.auth.getUser();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  const { data: { user } } = await supabase.auth.getUser(token);
   return !!user && user.email === ADMIN_EMAIL.trim();
 }
 
