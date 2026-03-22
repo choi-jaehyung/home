@@ -26,6 +26,7 @@ export default function UploadPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState<Record<string, unknown> | null>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [fileText, setFileText] = useState<string>("");
@@ -57,7 +58,17 @@ export default function UploadPage() {
         const res = await fetch("/api/upload-post", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setIsAdmin(res.status === 400);
+        const adminOk = res.status === 400;
+        setIsAdmin(adminOk);
+        if (!adminOk) {
+          // 인증 실패 시 디버그 정보 수집
+          fetch("/api/debug-auth", {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then((r) => r.json())
+            .then(setDebugInfo)
+            .catch(() => {});
+        }
       }
       setAuthLoading(false);
     });
@@ -189,16 +200,24 @@ export default function UploadPage() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white rounded-2xl p-10 shadow-sm border border-gray-100 text-center max-w-sm w-full">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="bg-white rounded-2xl p-10 shadow-sm border border-gray-100 text-center max-w-lg w-full">
           <p className="text-lg font-semibold text-gray-900 mb-2">접근 권한이 없습니다</p>
           <p className="text-sm text-gray-400 mb-6">{userEmail}</p>
           <button
             onClick={async () => { await supabase?.auth.signOut(); setUserEmail(null); setIsAdmin(false); }}
-            className="w-full py-2.5 px-4 border border-gray-200 text-sm text-gray-600 rounded-xl hover:bg-gray-50 transition-colors"
+            className="w-full py-2.5 px-4 border border-gray-200 text-sm text-gray-600 rounded-xl hover:bg-gray-50 transition-colors mb-4"
           >
             로그아웃
           </button>
+          {debugInfo && (
+            <details className="text-left mt-2">
+              <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">Debug Info</summary>
+              <pre className="mt-2 text-xs text-gray-500 bg-gray-50 rounded-xl p-3 overflow-auto max-h-64 whitespace-pre-wrap break-all">
+                {JSON.stringify(debugInfo, null, 2)}
+              </pre>
+            </details>
+          )}
         </div>
       </div>
     );
