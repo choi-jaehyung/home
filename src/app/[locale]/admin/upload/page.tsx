@@ -24,6 +24,7 @@ function toBase64(text: string): string {
 export default function UploadPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const [file, setFile] = useState<File | null>(null);
@@ -47,12 +48,15 @@ export default function UploadPage() {
       setAuthLoading(false);
       return;
     }
-    supabase.auth.getUser().then(async ({ data }) => {
-      const email = data.user?.email ?? null;
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const email = session?.user?.email ?? null;
+      const token = session?.access_token ?? null;
       setUserEmail(email);
-      if (email) {
-        // filename 없이 호출 → 401이면 비어드민, 400이면 어드민
-        const res = await fetch("/api/upload-post");
+      setAccessToken(token);
+      if (email && token) {
+        const res = await fetch("/api/upload-post", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setIsAdmin(res.status === 400);
       }
       setAuthLoading(false);
@@ -91,7 +95,8 @@ export default function UploadPage() {
       // 1. 파일 존재 확인 (sha 이미 알고 있으면 스킵)
       if (sha === undefined) {
         const checkRes = await fetch(
-          `/api/upload-post?filename=${encodeURIComponent(file.name)}`
+          `/api/upload-post?filename=${encodeURIComponent(file.name)}`,
+          { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} }
         );
         if (checkRes.status === 401) {
           setResult({ success: false, message: "접근 권한이 없습니다." });
@@ -110,7 +115,10 @@ export default function UploadPage() {
       // 2. 커밋
       const res = await fetch("/api/upload-post", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           filename: file.name,
           content: toBase64(fileText),

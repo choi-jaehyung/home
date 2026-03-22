@@ -6,12 +6,23 @@ const GITHUB_OWNER = process.env.GITHUB_OWNER;
 const GITHUB_REPO = process.env.GITHUB_REPO;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
-async function verifyAdmin(): Promise<boolean> {
+async function verifyAdmin(request: NextRequest): Promise<boolean> {
   if (!ADMIN_EMAIL) return false;
+
+  // Authorization 헤더 토큰 우선 (쿠키 세션이 없는 경우 대응)
+  const token = request.headers.get("authorization")?.replace("Bearer ", "");
+  if (token) {
+    const supabase = await createServerSupabaseClient();
+    if (!supabase) return false;
+    const { data: { user } } = await supabase.auth.getUser(token);
+    return !!user && user.email === ADMIN_EMAIL.trim();
+  }
+
+  // 쿠키 세션 폴백
   const supabase = await createServerSupabaseClient();
   if (!supabase) return false;
   const { data: { user } } = await supabase.auth.getUser();
-  return !!user && user.email === ADMIN_EMAIL?.trim();
+  return !!user && user.email === ADMIN_EMAIL.trim();
 }
 
 function githubHeaders() {
@@ -32,7 +43,7 @@ function contentsUrl(filename: string) {
 
 // GET: 파일 존재 여부 확인
 export async function GET(request: NextRequest) {
-  const isAdmin = await verifyAdmin();
+  const isAdmin = await verifyAdmin(request);
   if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const filename = request.nextUrl.searchParams.get("filename");
@@ -52,7 +63,7 @@ export async function GET(request: NextRequest) {
 
 // POST: 파일 커밋
 export async function POST(request: NextRequest) {
-  const isAdmin = await verifyAdmin();
+  const isAdmin = await verifyAdmin(request);
   if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { filename, content, sha } = await request.json();
