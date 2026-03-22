@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import AuthRedirect from "@/components/AuthRedirect";
 import "../globals.css";
 import "katex/dist/katex.min.css";
 
@@ -66,6 +67,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <div className={`${geistSans.variable} ${geistMono.variable} ${nanumMyeongjo.variable} ${nanumGothic.variable} ${lineSeed.variable} min-h-full flex flex-col bg-white text-gray-900 antialiased`}>
       <NextIntlClientProvider messages={messages}>
+        <AuthRedirect />
         <Header locale={locale} />
         <main className="flex-1">{children}</main>
         <Footer />

@@ -28,9 +28,17 @@ export default async function ArticlesPage({ params, searchParams }: Props) {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
       <div className="mb-10">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-1">
-          Writings
-        </h1>
+        <div className="flex items-center gap-3 mb-1">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            Writings
+          </h1>
+          <Link
+            href={`/${locale}/admin/upload`}
+            className="text-xs text-gray-400 border border-gray-200 rounded-full px-2.5 py-0.5 hover:border-gray-400 hover:text-gray-600 transition-colors"
+          >
+            Admin
+          </Link>
+        </div>
         <p className="text-sm text-gray-400">{posts.length}개의 글</p>
       </div>
 
