@@ -44,14 +44,27 @@ export default function CommentSection({ slug, locale }: Props) {
     return () => subscription.unsubscribe();
   }, [slug, loadComments, supabase]);
 
-  const login = async (provider: "google" | "github") => {
-    if (!supabase) return;
-    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(window.location.pathname)}`;
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: callbackUrl },
-    });
+  const login = (provider: "google" | "github") => {
+    const w = 500, h = 620;
+    const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
+    const top = Math.round(window.screenY + (window.outerHeight - h) / 2);
+    window.open(
+      `/auth/popup-init?provider=${provider}`,
+      "oauth-popup",
+      `width=${w},height=${h},left=${left},top=${top},scrollbars=yes`
+    );
   };
+
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === "AUTH_SUCCESS") {
+        supabase?.auth.getUser().then(({ data }) => setUser(data.user));
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [supabase]);
 
   const logout = async () => {
     if (!supabase) return;
