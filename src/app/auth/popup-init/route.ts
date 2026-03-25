@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   const { data } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo: `${origin}/auth/callback` },
+    options: { redirectTo: `${origin}/auth/popup-callback` },
   });
 
   if (!data?.url) {

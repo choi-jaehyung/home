@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
@@ -44,27 +44,56 @@ export default function CommentSection({ slug, locale }: Props) {
     return () => subscription.unsubscribe();
   }, [slug, loadComments, supabase]);
 
+  const popupRef = useRef<Window | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const refreshUser = useCallback(() => {
+    supabase?.auth.getUser().then(({ data }) => {
+      if (data.user) setUser(data.user);
+    });
+  }, [supabase]);
+
   const login = (provider: "google" | "github") => {
     const w = 500, h = 620;
     const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
     const top = Math.round(window.screenY + (window.outerHeight - h) / 2);
-    window.open(
+    const popup = window.open(
       `/auth/popup-init?provider=${provider}`,
       "oauth-popup",
       `width=${w},height=${h},left=${left},top=${top},scrollbars=yes`
     );
+    popupRef.current = popup;
+
+    // 레이어 3: 팝업 닫힘 폴링 — postMessage/storage 이벤트가 실패할 경우 최종 보장
+    if (popup) {
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = setInterval(() => {
+        if (popup.closed) {
+          if (pollRef.current) clearInterval(pollRef.current);
+          refreshUser();
+        }
+      }, 500);
+    }
   };
 
+  // 레이어 1: localStorage storage 이벤트 — Safari 등 window.opener가 null인 경우 대응
   useEffect(() => {
-    const handler = (e: MessageEvent) => {
-      if (e.origin !== window.location.origin) return;
-      if (e.data?.type === "AUTH_SUCCESS") {
-        supabase?.auth.getUser().then(({ data }) => setUser(data.user));
-      }
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "auth_popup_done") refreshUser();
     };
-    window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
-  }, [supabase]);
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [refreshUser]);
+
+  // 레이어 2: postMessage — Chrome 등 window.opener가 살아있는 경우
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === "AUTH_SUCCESS") refreshUser();
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [refreshUser]);
 
   const logout = async () => {
     if (!supabase) return;
