@@ -1,11 +1,41 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { getPostsByLocale, getTopTags } from "@/lib/posts";
 
 type Props = {
   params: Promise<{ locale: string }>;
 };
+
+const HOME_META: Record<string, { title: string; description: string }> = {
+  ko: {
+    title: "최재형 Jaehyung Choi — CFO · Finance · Web3",
+    description: "삼성전자·네이버·LINE에 걸쳐 20여년 간 재무와 경영을 다뤄왔습니다.",
+  },
+  en: {
+    title: "Jaehyung Choi — CFO · Finance · Web3",
+    description: "20+ years of finance and management across Samsung Electronics, Naver, and LINE.",
+  },
+  ja: {
+    title: "崔在亨 Jaehyung Choi — CFO · Finance · Web3",
+    description: "サムスン電子・Naver・LINEで20年以上の財務・経営の経験を持つCFOです。",
+  },
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const meta = HOME_META[locale] ?? HOME_META.ko;
+  return {
+    title: { absolute: meta.title },
+    description: meta.description,
+    openGraph: {
+      title: meta.title,
+      description: meta.description,
+      url: `https://roarion.me/${locale}`,
+    },
+  };
+}
 
 export default async function HomePage({ params }: Props) {
   const { locale } = await params;
@@ -25,6 +55,7 @@ export default async function HomePage({ params }: Props) {
             src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=1920&q=85&auto=format&fit=crop"
             alt="Mountain landscape"
             fill
+            sizes="100vw"
             className="object-cover object-center"
             priority
           />

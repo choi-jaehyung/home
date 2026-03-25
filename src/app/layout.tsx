@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Homepage",
-  description: "Personal homepage",
+  metadataBase: new URL("https://roarion.me"),
 };
 
 export default function RootLayout({
@@ -13,6 +12,9 @@ export default function RootLayout({
 }>) {
   return (
     <html suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://images.unsplash.com" />
+      </head>
       <body>{children}</body>
     </html>
   );

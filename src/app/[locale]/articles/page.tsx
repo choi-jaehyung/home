@@ -10,10 +10,22 @@ type Props = {
   searchParams: Promise<{ tag?: string }>;
 };
 
+const ARTICLES_DESC: Record<string, string> = {
+  ko: "최재형의 글 모음 — 생각, 독서, 그리고 금융·Web3에 관한 기록",
+  en: "Writings by Jaehyung Choi — thoughts on books, finance, and Web3",
+  ja: "崔在亨の文章集 — 思考、読書、ファイナンス・Web3について",
+};
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "articles" });
-  return { title: t("title") };
+  const title = t("title");
+  const description = ARTICLES_DESC[locale] ?? ARTICLES_DESC.ko;
+  return {
+    title,
+    description,
+    openGraph: { title, description, url: `https://roarion.me/${locale}/articles` },
+  };
 }
 
 export default async function ArticlesPage({ params, searchParams }: Props) {

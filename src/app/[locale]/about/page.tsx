@@ -6,8 +6,25 @@ type Props = {
   params: Promise<{ locale: string }>;
 };
 
-export async function generateMetadata(): Promise<Metadata> {
-  return { title: "About" };
+const ABOUT_META: Record<string, { title: string; description: string }> = {
+  ko: { title: "소개", description: "최재형 CFO — 삼성전자·네이버·LINE 20여년 재무 경력, 전문성, 연락처" },
+  en: { title: "About", description: "Jaehyung Choi — CFO with 20+ years across Samsung Electronics, Naver, and LINE" },
+  ja: { title: "プロフィール", description: "崔在亨 CFO — サムスン電子・Naver・LINEでの20年以上の財務経歴" },
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const meta = ABOUT_META[locale] ?? ABOUT_META.ko;
+  return {
+    title: meta.title,
+    description: meta.description,
+    openGraph: {
+      title: meta.title,
+      description: meta.description,
+      url: `https://roarion.me/${locale}/about`,
+      images: [{ url: "/profile.png", width: 400, height: 400 }],
+    },
+  };
 }
 
 const timeline = [
@@ -73,7 +90,9 @@ export default async function AboutPage({ params }: Props) {
               alt="Jaehyung Choi"
               width={144}
               height={400}
+              sizes="(max-width: 640px) 112px, 144px"
               className="w-full h-auto object-cover object-top"
+              priority
             />
           </div>
         </div>

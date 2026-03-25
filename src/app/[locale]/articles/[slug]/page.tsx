@@ -58,9 +58,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const slug = decodeURIComponent(rawSlug);
   const post = getPost(slug, locale);
   if (!post) return {};
+  const ogImage = post.image ?? "/profile.png";
   return {
     title: post.title,
     description: post.description,
+    openGraph: {
+      title: post.title,
+      description: post.description,
+      url: `https://roarion.me/${locale}/articles/${slug}`,
+      type: "article",
+      publishedTime: post.date,
+      images: [{ url: ogImage }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.description,
+      images: [ogImage],
+    },
   };
 }
 
@@ -81,6 +96,7 @@ export default async function ArticlePage({ params }: Props) {
           src={post.image || DEFAULT_HERO_IMAGE}
           alt={post.title}
           fill
+          sizes="100vw"
           className="object-cover object-center"
           priority
           unoptimized={!!(post.image && isExternalUrl(post.image) && !post.image.includes("unsplash.com"))}

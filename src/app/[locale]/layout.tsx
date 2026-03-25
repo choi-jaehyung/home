@@ -44,10 +44,19 @@ const lineSeed = localFont({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Homepage",
-    default: "Homepage",
+    template: "%s | 최재형 Jaehyung Choi",
+    default: "최재형 Jaehyung Choi — CFO · Finance · Web3",
   },
-  description: "Personal homepage - About, Career, and Articles",
+  description: "삼성전자·네이버·LINE에 걸쳐 20여년 간 재무와 경영을 다뤄왔습니다.",
+  openGraph: {
+    siteName: "최재형 Jaehyung Choi",
+    type: "website",
+    images: [{ url: "/profile.png", width: 400, height: 400, alt: "최재형 Jaehyung Choi" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/profile.png"],
+  },
 };
 
 type Props = {

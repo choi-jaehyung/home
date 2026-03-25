@@ -110,5 +110,5 @@ function normalizeFilename(filename: string) {
 
 ## 정리 필요 사항
 
-- [ ] `src/app/api/debug-auth/route.ts` 삭제 (임시 디버그용, 보안상 제거 권장)
-- [ ] `src/app/[locale]/admin/upload/page.tsx` 내 debug 관련 state/코드 제거
+- [x] `src/app/api/debug-auth/route.ts` 삭제 완료 (2026-03-24)
+- [x] `src/app/[locale]/admin/upload/page.tsx` 내 debug 코드 제거 완료 (2026-03-24)

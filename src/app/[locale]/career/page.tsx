@@ -4,8 +4,20 @@ type Props = {
   params: Promise<{ locale: string }>;
 };
 
-export async function generateMetadata(): Promise<Metadata> {
-  return { title: "Career" };
+const CAREER_META: Record<string, { title: string; description: string }> = {
+  ko: { title: "경력", description: "삼성전자 · 네이버 · LINE Group — 20여년 재무·경영 상세 경력" },
+  en: { title: "Career", description: "20+ years of experience at Samsung Electronics, Naver, and LINE Group" },
+  ja: { title: "キャリア", description: "サムスン電子・Naver・LINE Group — 20年以上の財務・経営経歴" },
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const meta = CAREER_META[locale] ?? CAREER_META.ko;
+  return {
+    title: meta.title,
+    description: meta.description,
+    openGraph: { title: meta.title, description: meta.description, url: `https://roarion.me/${locale}/career` },
+  };
 }
 
 type Highlight = { text: string; link?: string };
