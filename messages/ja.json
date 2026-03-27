@@ -29,6 +29,9 @@
     "search_placeholder": "検索...",
     "no_results": "このタグの記事はありません。"
   },
+  "photos": {
+    "title": "写真"
+  },
   "footer": {
     "rights": "All rights reserved."
   }

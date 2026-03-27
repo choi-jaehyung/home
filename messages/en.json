@@ -29,6 +29,9 @@
     "search_placeholder": "Search...",
     "no_results": "No articles found for this tag."
   },
+  "photos": {
+    "title": "Photo"
+  },
   "footer": {
     "rights": "All rights reserved."
   }

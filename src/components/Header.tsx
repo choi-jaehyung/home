@@ -18,6 +18,7 @@ export default function Header({ locale }: Props) {
     { href: `/${locale}/about`, label: "About" },
     { href: `/${locale}/career`, label: "Career" },
     { href: `/${locale}/articles`, label: "Writings" },
+    { href: `/${locale}/photos`, label: "Photo" },
   ];
 
   const locales = [

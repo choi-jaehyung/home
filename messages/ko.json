@@ -29,6 +29,9 @@
     "search_placeholder": "검색...",
     "no_results": "해당 태그의 글이 없습니다."
   },
+  "photos": {
+    "title": "사진"
+  },
   "footer": {
     "rights": "All rights reserved."
   }
