@@ -3,28 +3,36 @@ import { createClient } from "@supabase/supabase-js";
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
-async function verifyAdmin(request: NextRequest): Promise<boolean> {
+async function verifyAdmin(request: NextRequest): Promise<string | null> {
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token || !ADMIN_EMAIL) return false;
+  if (!token || !ADMIN_EMAIL) return null;
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
   const { data: { user } } = await supabase.auth.getUser(token);
-  return !!user && user.email === ADMIN_EMAIL.trim();
+  if (!user || user.email !== ADMIN_EMAIL.trim()) return null;
+  return token;
 }
 
-function adminClient() {
+function adminClient(token?: string) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY not configured");
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey);
+  if (serviceKey) {
+    return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey);
+  }
+  // Service Role Key 없을 경우 anon key + 사용자 토큰으로 fallback
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    token ? { global: { headers: { Authorization: `Bearer ${token}` } } } : undefined
+  );
 }
 
 // POST: Storage 업로드 + photos 테이블 insert
 export async function POST(request: NextRequest) {
-  const isAdmin = await verifyAdmin(request);
-  if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const token = await verifyAdmin(request);
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
@@ -36,12 +44,7 @@ export async function POST(request: NextRequest) {
   const ext = file.name.split(".").pop();
   const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
-  let supabase;
-  try {
-    supabase = adminClient();
-  } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Server config error" }, { status: 500 });
-  }
+  const supabase = adminClient(token);
 
   // 1. Storage 업로드
   const { error: storageError } = await supabase.storage
@@ -73,18 +76,13 @@ export async function POST(request: NextRequest) {
 
 // DELETE: Storage + photos 테이블 delete
 export async function DELETE(request: NextRequest) {
-  const isAdmin = await verifyAdmin(request);
-  if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const token = await verifyAdmin(request);
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id, url } = await request.json();
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  let supabase;
-  try {
-    supabase = adminClient();
-  } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Server config error" }, { status: 500 });
-  }
+  const supabase = adminClient(token);
 
   // Storage 파일 삭제
   if (url) {
