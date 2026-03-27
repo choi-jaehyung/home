@@ -15,6 +15,7 @@ type Photo = {
 export default function AdminPhotosPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -44,6 +45,7 @@ export default function AdminPhotosPage() {
       const email = session?.user?.email ?? null;
       const token = session?.access_token ?? null;
       setUserEmail(email);
+      setAccessToken(token);
       if (email && token) {
         const res = await fetch("/api/upload-post", {
           headers: { Authorization: `Bearer ${token}` },
@@ -113,16 +115,23 @@ export default function AdminPhotosPage() {
         .from("photos")
         .getPublicUrl(filename);
 
-      // 3. photos 테이블에 insert
-      const { error: dbError } = await supabase.from("photos").insert({
-        url: publicUrl,
-        caption: caption.trim() || null,
-        taken_at: takenAt || null,
-        order: 0,
+      // 3. photos 테이블에 insert (API 라우트로 처리)
+      const dbRes = await fetch("/api/photos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({
+          url: publicUrl,
+          caption: caption.trim() || null,
+          taken_at: takenAt || null,
+        }),
       });
 
-      if (dbError) {
-        setUploadError(dbError.message);
+      if (!dbRes.ok) {
+        const dbErr = await dbRes.json().catch(() => ({}));
+        setUploadError((dbErr as { error?: string }).error || "DB 저장 실패");
         // 업로드된 파일 롤백
         await supabase.storage.from("photos").remove([filename]);
         setUploading(false);
@@ -155,7 +164,14 @@ export default function AdminPhotosPage() {
         await supabase.storage.from("photos").remove([filename]);
       }
 
-      await supabase.from("photos").delete().eq("id", photo.id);
+      await fetch("/api/photos", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ id: photo.id }),
+      });
       setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
     } catch (e) {
       alert(e instanceof Error ? e.message : "삭제 실패");
