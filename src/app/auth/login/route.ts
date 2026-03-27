@@ -10,15 +10,13 @@ const SITE_URL =
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const provider = (searchParams.get("provider") ?? "google") as "google" | "github";
-  const next = searchParams.get("next") ?? "/";
 
   const supabase = await createServerSupabaseClient();
   if (!supabase) return NextResponse.redirect(`${origin}/`);
 
   const { data } = await supabase.auth.signInWithOAuth({
     provider,
-    // next를 redirectTo URL에 직접 포함 — 쿠키 방식보다 안정적
-    options: { redirectTo: `${SITE_URL}/auth/callback?next=${encodeURIComponent(next)}` },
+    options: { redirectTo: `${SITE_URL}/auth/callback` },
   });
 
   if (!data?.url) return NextResponse.redirect(`${origin}/`);
