@@ -17,13 +17,11 @@ export async function GET(request: NextRequest) {
 
   const { data } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo: `${SITE_URL}/auth/callback` },
+    // next를 redirectTo URL에 직접 포함 — 쿠키 방식보다 안정적
+    options: { redirectTo: `${SITE_URL}/auth/callback?next=${encodeURIComponent(next)}` },
   });
 
   if (!data?.url) return NextResponse.redirect(`${origin}/`);
 
-  // next URL을 쿠키에 저장 (10분 유효) — callback에서 읽어 복귀에 사용
-  const response = NextResponse.redirect(data.url);
-  response.cookies.set("auth_next", next, { path: "/", maxAge: 600, sameSite: "lax" });
-  return response;
+  return NextResponse.redirect(data.url);
 }
