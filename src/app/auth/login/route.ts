@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 // Supabase가 허용하지 않는 도메인이 redirectTo로 들어가 Site URL로 강제 이동됨
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
-  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
