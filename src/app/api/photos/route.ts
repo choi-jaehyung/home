@@ -3,62 +3,91 @@ import { createClient } from "@supabase/supabase-js";
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
-async function verifyAdmin(request: NextRequest): Promise<string | null> {
+async function verifyAdmin(request: NextRequest): Promise<boolean> {
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token || !ADMIN_EMAIL) return null;
+  if (!token || !ADMIN_EMAIL) return false;
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
   const { data: { user } } = await supabase.auth.getUser(token);
-  if (!user || user.email !== ADMIN_EMAIL.trim()) return null;
-  return token;
+  return !!user && user.email === ADMIN_EMAIL.trim();
 }
 
-function makeClient(token: string) {
-  // 서비스 롤 키가 있으면 RLS 우회, 없으면 사용자 JWT로 auth.uid() 활성화
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  return serviceKey
-    ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey)
-    : createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { global: { headers: { Authorization: `Bearer ${token}` } } }
-      );
+function adminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 }
 
-// POST: photos 테이블 insert
+// POST: Storage 업로드 + photos 테이블 insert
 export async function POST(request: NextRequest) {
-  const token = await verifyAdmin(request);
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const isAdmin = await verifyAdmin(request);
+  if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { url, caption, taken_at } = await request.json();
-  if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
+  const formData = await request.formData();
+  const file = formData.get("file") as File | null;
+  const caption = formData.get("caption") as string | null;
+  const taken_at = formData.get("taken_at") as string | null;
 
-  const supabase = makeClient(token);
-  const { error } = await supabase.from("photos").insert({
-    url,
+  if (!file) return NextResponse.json({ error: "file required" }, { status: 400 });
+
+  const ext = file.name.split(".").pop();
+  const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+
+  const supabase = adminClient();
+
+  // 1. Storage 업로드
+  const { error: storageError } = await supabase.storage
+    .from("photos")
+    .upload(filename, file, { cacheControl: "3600", upsert: false });
+
+  if (storageError) {
+    return NextResponse.json({ error: storageError.message }, { status: 500 });
+  }
+
+  // 2. Public URL
+  const { data: { publicUrl } } = supabase.storage.from("photos").getPublicUrl(filename);
+
+  // 3. DB insert
+  const { error: dbError } = await supabase.from("photos").insert({
+    url: publicUrl,
     caption: caption || null,
     taken_at: taken_at || null,
     order: 0,
   });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ success: true });
+  if (dbError) {
+    await supabase.storage.from("photos").remove([filename]);
+    return NextResponse.json({ error: dbError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, url: publicUrl });
 }
 
-// DELETE: photos 테이블 delete
+// DELETE: Storage + photos 테이블 delete
 export async function DELETE(request: NextRequest) {
-  const token = await verifyAdmin(request);
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const isAdmin = await verifyAdmin(request);
+  if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await request.json();
+  const { id, url } = await request.json();
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const supabase = makeClient(token);
-  const { error } = await supabase.from("photos").delete().eq("id", id);
+  const supabase = adminClient();
 
+  // Storage 파일 삭제
+  if (url) {
+    const urlParts = (url as string).split("/photos/");
+    const filename = urlParts[urlParts.length - 1];
+    if (filename) {
+      await supabase.storage.from("photos").remove([filename]);
+    }
+  }
+
+  const { error } = await supabase.from("photos").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
   return NextResponse.json({ success: true });
 }

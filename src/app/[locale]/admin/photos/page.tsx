@@ -91,54 +91,28 @@ export default function AdminPhotosPage() {
   }
 
   async function handleUpload() {
-    if (!imageFile || !supabase) return;
+    if (!imageFile) return;
     setUploading(true);
     setUploadError(null);
 
     try {
-      // 1. Supabase Storage 업로드
-      const ext = imageFile.name.split(".").pop();
-      const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const formData = new FormData();
+      formData.append("file", imageFile);
+      if (caption.trim()) formData.append("caption", caption.trim());
+      if (takenAt) formData.append("taken_at", takenAt);
 
-      const { error: storageError } = await supabase.storage
-        .from("photos")
-        .upload(filename, imageFile, { cacheControl: "3600", upsert: false });
-
-      if (storageError) {
-        setUploadError(storageError.message);
-        setUploading(false);
-        return;
-      }
-
-      // 2. Public URL 가져오기
-      const { data: { publicUrl } } = supabase.storage
-        .from("photos")
-        .getPublicUrl(filename);
-
-      // 3. photos 테이블에 insert (API 라우트로 처리)
-      const dbRes = await fetch("/api/photos", {
+      const res = await fetch("/api/photos", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        },
-        body: JSON.stringify({
-          url: publicUrl,
-          caption: caption.trim() || null,
-          taken_at: takenAt || null,
-        }),
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        body: formData,
       });
 
-      if (!dbRes.ok) {
-        const dbErr = await dbRes.json().catch(() => ({}));
-        setUploadError((dbErr as { error?: string }).error || "DB 저장 실패");
-        // 업로드된 파일 롤백
-        await supabase.storage.from("photos").remove([filename]);
-        setUploading(false);
+      const data = await res.json();
+      if (!res.ok) {
+        setUploadError(data.error || "업로드 실패");
         return;
       }
 
-      // 4. 상태 초기화 + 목록 갱신
       setImageFile(null);
       setImagePreview(null);
       setCaption("");
@@ -152,25 +126,17 @@ export default function AdminPhotosPage() {
   }
 
   async function handleDelete(photo: Photo) {
-    if (!supabase || !confirm(`"${photo.caption || photo.id}" 사진을 삭제하시겠습니까?`)) return;
+    if (!confirm(`"${photo.caption || photo.id}" 사진을 삭제하시겠습니까?`)) return;
     setDeletingId(photo.id);
 
     try {
-      // Storage에서 파일명 추출
-      const urlParts = photo.url.split("/photos/");
-      const filename = urlParts[urlParts.length - 1];
-
-      if (filename) {
-        await supabase.storage.from("photos").remove([filename]);
-      }
-
       await fetch("/api/photos", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
-        body: JSON.stringify({ id: photo.id }),
+        body: JSON.stringify({ id: photo.id, url: photo.url }),
       });
       setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
     } catch (e) {
