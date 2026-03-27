@@ -45,8 +45,8 @@ export default function CommentSection({ slug, locale }: Props) {
   }, [slug, loadComments, supabase]);
 
   const login = (provider: "google" | "github") => {
-    // 클라이언트에서 직접 쿠키 설정 — 이동 전에 보장되어야 callback에서 읽을 수 있음
-    document.cookie = `auth_next=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; samesite=lax`;
+    // 로그인 완료 후 AuthRedirect가 이 URL로 복귀
+    localStorage.setItem("authReturn", window.location.href);
     window.location.href = `/auth/login?provider=${provider}`;
   };
 
