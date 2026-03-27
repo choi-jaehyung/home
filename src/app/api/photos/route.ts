@@ -16,10 +16,9 @@ async function verifyAdmin(request: NextRequest): Promise<boolean> {
 }
 
 function adminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY not configured");
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey);
 }
 
 // POST: Storage 업로드 + photos 테이블 insert
@@ -37,7 +36,12 @@ export async function POST(request: NextRequest) {
   const ext = file.name.split(".").pop();
   const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
-  const supabase = adminClient();
+  let supabase;
+  try {
+    supabase = adminClient();
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Server config error" }, { status: 500 });
+  }
 
   // 1. Storage 업로드
   const { error: storageError } = await supabase.storage
@@ -75,7 +79,12 @@ export async function DELETE(request: NextRequest) {
   const { id, url } = await request.json();
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const supabase = adminClient();
+  let supabase;
+  try {
+    supabase = adminClient();
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Server config error" }, { status: 500 });
+  }
 
   // Storage 파일 삭제
   if (url) {
