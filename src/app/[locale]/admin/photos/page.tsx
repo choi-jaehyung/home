@@ -4,6 +4,47 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import Image from "next/image";
 
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
+const COMPRESS_TARGET = 3 * 1024 * 1024; // 3MB
+const MAX_DIMENSION = 2560;
+
+async function compressImageFile(file: File): Promise<File> {
+  // GIF는 Canvas 재인코딩 시 애니메이션 손실 — 원본 반환
+  if (file.type === "image/gif") return file;
+  // 이미 목표 크기 이하면 압축 불필요
+  if (file.size <= COMPRESS_TARGET) return file;
+
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height, 1);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const outType = file.type === "image/webp" ? "image/webp" : "image/jpeg";
+      canvas.toBlob(
+        (blob) => {
+          if (!blob || blob.size >= file.size) { resolve(file); return; }
+          resolve(new File([blob], file.name, { type: outType }));
+        },
+        outType,
+        0.85
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 type Photo = {
   id: string;
   url: string;
@@ -77,6 +118,10 @@ export default function AdminPhotosPage() {
       alert("jpg, png, gif, webp 파일만 업로드 가능합니다.");
       return;
     }
+    if (selected.size > MAX_FILE_SIZE) {
+      alert(`파일이 너무 큽니다. 4MB 이하 파일을 선택해주세요. (현재: ${(selected.size / 1024 / 1024).toFixed(1)}MB)`);
+      return;
+    }
     setImageFile(selected);
     setUploadError(null);
     const reader = new FileReader();
@@ -96,8 +141,9 @@ export default function AdminPhotosPage() {
     setUploadError(null);
 
     try {
+      const fileToUpload = await compressImageFile(imageFile);
       const formData = new FormData();
-      formData.append("file", imageFile);
+      formData.append("file", fileToUpload);
       if (caption.trim()) formData.append("caption", caption.trim());
       if (takenAt) formData.append("taken_at", takenAt);
 
@@ -107,11 +153,18 @@ export default function AdminPhotosPage() {
         body: formData,
       });
 
-      const data = await res.json();
       if (!res.ok) {
-        setUploadError(data.error || "업로드 실패");
+        const ct = res.headers.get("content-type") ?? "";
+        let errMsg = `업로드 실패 (${res.status})`;
+        if (ct.includes("application/json")) {
+          try { const d = await res.json(); errMsg = d.error || errMsg; } catch { /* ignore */ }
+        } else if (res.status === 413) {
+          errMsg = "파일이 너무 큽니다. 4MB 이하 이미지를 사용해주세요.";
+        }
+        setUploadError(errMsg);
         return;
       }
+      await res.json();
 
       setImageFile(null);
       setImagePreview(null);
