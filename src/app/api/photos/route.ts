@@ -31,6 +31,9 @@ function adminClient(token?: string) {
 
 // POST: Storage 업로드 + photos 테이블 insert
 export async function POST(request: NextRequest) {
+  console.log('[photos API] SERVICE_KEY_EXISTS:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+  console.log('[photos API] URL_EXISTS:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+
   const token = await verifyAdmin(request);
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -52,7 +55,10 @@ export async function POST(request: NextRequest) {
     .upload(filename, file, { cacheControl: "3600", upsert: false });
 
   if (storageError) {
-    return NextResponse.json({ error: storageError.message }, { status: 500 });
+    return NextResponse.json({
+      error: `Storage upload failed: ${storageError.message}`,
+      hint: 'Check Storage bucket RLS policies'
+    }, { status: 500 });
   }
 
   // 2. Public URL
@@ -68,7 +74,10 @@ export async function POST(request: NextRequest) {
 
   if (dbError) {
     await supabase.storage.from("photos").remove([filename]);
-    return NextResponse.json({ error: dbError.message }, { status: 500 });
+    return NextResponse.json({
+      error: `DB insert failed: ${dbError.message}`,
+      hint: 'Check photos table RLS policies'
+    }, { status: 500 });
   }
 
   return NextResponse.json({ success: true, url: publicUrl });
