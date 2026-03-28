@@ -132,6 +132,15 @@ export default async function ArticlePage({ params }: Props) {
               { year: "numeric", month: "long", day: "numeric" }
             )}
           </time>
+
+          <div className="mt-3">
+            <Link
+              href={`/${locale}/admin/upload?tab=edit&file=${encodeURIComponent(post.filename)}`}
+              className="text-xs text-white/40 border border-white/20 rounded-full px-2.5 py-0.5 hover:text-white/70 hover:border-white/40 transition-colors"
+            >
+              Admin
+            </Link>
+          </div>
         </div>
       </div>
 

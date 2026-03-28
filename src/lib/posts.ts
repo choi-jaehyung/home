@@ -13,6 +13,7 @@ import rehypeStringify from "rehype-stringify";
 
 export type Post = {
   slug: string;
+  filename: string;
   locale: string;
   title: string;
   date: string;
@@ -41,9 +42,10 @@ function languageHeaderMatchesLocale(langHeader: string, locale: string): boolea
   return values.some((v) => LOCALE_NAMES[locale]?.includes(v));
 }
 
-function buildPost(slug: string, locale: string, data: Record<string, unknown>, content: string): Post {
+function buildPost(slug: string, filename: string, locale: string, data: Record<string, unknown>, content: string): Post {
   return {
     slug,
+    filename,
     locale,
     title: String(data.title || ""),
     date: data.date ? String(data.date) : "",
@@ -68,7 +70,7 @@ export function getPostsByLocale(locale: string): Post[] {
   const parseFile = (filename: string, slug: string, usedLocale: string): Post => {
     const fullPath = path.join(postsDirectory, filename);
     const { data, content } = matter(fs.readFileSync(fullPath, "utf8"));
-    return buildPost(slug, usedLocale, data, content);
+    return buildPost(slug, filename, usedLocale, data, content);
   };
 
   // 1. 파일명 로케일 방식: slug.ko.md / slug.en.md / slug.ja.md
@@ -109,20 +111,22 @@ export function getPost(slug: string, locale: string): Post | null {
   // 1. 파일명 로케일 방식 우선
   const tryLocales = [locale, "ko"];
   for (const l of tryLocales) {
-    const fullPath = path.join(postsDirectory, `${slug}.${l}.md`);
+    const fname = `${slug}.${l}.md`;
+    const fullPath = path.join(postsDirectory, fname);
     if (fs.existsSync(fullPath)) {
       const { data, content } = matter(fs.readFileSync(fullPath, "utf8"));
-      return buildPost(slug, l, data, content);
+      return buildPost(slug, fname, l, data, content);
     }
   }
 
   // 2. 헤더 언어 방식
-  const plainPath = path.join(postsDirectory, `${slug}.md`);
+  const plainFilename = `${slug}.md`;
+  const plainPath = path.join(postsDirectory, plainFilename);
   if (fs.existsSync(plainPath)) {
     const { data, content } = matter(fs.readFileSync(plainPath, "utf8"));
     const lang: string = (data.language as string) || "all";
     if (languageHeaderMatchesLocale(lang, locale)) {
-      return buildPost(slug, locale, data, content);
+      return buildPost(slug, plainFilename, locale, data, content);
     }
   }
 

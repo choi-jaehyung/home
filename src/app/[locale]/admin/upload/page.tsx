@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 
 type Frontmatter = Record<string, string>;
@@ -44,6 +45,11 @@ export default function UploadPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+
+  const searchParams = useSearchParams();
+  const initFile = searchParams.get("file");
+  const initTab = searchParams.get("tab");
+  const initTriggered = useRef(false);
 
   const [activeTab, setActiveTab] = useState<"md" | "image" | "edit">("md");
 
@@ -102,6 +108,48 @@ export default function UploadPage() {
       setAuthLoading(false);
     });
   }, []);
+
+  // URL 파라미터로 진입 시 글 수정 탭 자동 로드
+  useEffect(() => {
+    if (!isAdmin || !accessToken || initTriggered.current) return;
+    if (initTab === "edit" && initFile) {
+      initTriggered.current = true;
+      setActiveTab("edit");
+      (async () => {
+        setEditLoading(true);
+        try {
+          const listRes = await fetch("/api/upload-post?list=true", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          const listData = await listRes.json();
+          const files: string[] = listData.files ?? [];
+          setEditFiles(files);
+          const target = files.find((f) => f === initFile) ?? "";
+          if (target) {
+            setEditSelectedFile(target);
+            const contentRes = await fetch(
+              `/api/upload-post?filename=${encodeURIComponent(target)}&content=true`,
+              { headers: { Authorization: `Bearer ${accessToken}` } }
+            );
+            const contentData = await contentRes.json();
+            if (contentData.exists) {
+              const decoded = fromBase64(contentData.content);
+              setEditContent(decoded);
+              setEditSha(contentData.sha);
+              setEditFrontmatter(parseFrontmatter(decoded));
+            }
+          } else if (files.length > 0) {
+            setEditSelectedFile(files[0]);
+          }
+        } catch {
+          // ignore
+        } finally {
+          setEditLoading(false);
+        }
+      })();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, accessToken]);
 
   // ── MD 업로더 핸들러 ──
 
