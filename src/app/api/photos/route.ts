@@ -44,15 +44,24 @@ export async function POST(request: NextRequest) {
 
   if (!file) return NextResponse.json({ error: "file required" }, { status: 400 });
 
-  const ext = file.name.split(".").pop();
+  const ext = file.name.split(".").pop()?.toLowerCase();
   const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+
+  const mimeMap: Record<string, string> = {
+    jpg: "image/jpeg", jpeg: "image/jpeg",
+    png: "image/png", gif: "image/gif", webp: "image/webp",
+  };
+  const contentType = file.type || (ext ? mimeMap[ext] : undefined) || "application/octet-stream";
+  const fileBuffer = await file.arrayBuffer();
+
+  console.log('[photos API] file.type:', file.type, '| contentType:', contentType, '| name:', file.name);
 
   const supabase = adminClient(token);
 
   // 1. Storage 업로드
   const { error: storageError } = await supabase.storage
     .from("photos")
-    .upload(filename, file, { cacheControl: "3600", upsert: false });
+    .upload(filename, fileBuffer, { cacheControl: "3600", upsert: false, contentType });
 
   if (storageError) {
     return NextResponse.json({
