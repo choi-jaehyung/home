@@ -80,6 +80,12 @@ export default function AdminPhotosPage() {
   // 삭제
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // 수정
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCaption, setEditCaption] = useState("");
+  const [editTakenAt, setEditTakenAt] = useState("");
+  const [saving, setSaving] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
@@ -181,6 +187,40 @@ export default function AdminPhotosPage() {
       setUploadError(e instanceof Error ? e.message : "업로드 실패");
     } finally {
       setUploading(false);
+    }
+  }
+
+  function handleEditStart(photo: Photo) {
+    setEditingId(photo.id);
+    setEditCaption(photo.caption ?? "");
+    setEditTakenAt(photo.taken_at ?? "");
+  }
+
+  async function handleEditSave(photo: Photo) {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/photos", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ id: photo.id, caption: editCaption, taken_at: editTakenAt }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || "저장 실패"); return; }
+      setPhotos((prev) =>
+        prev.map((p) =>
+          p.id === photo.id
+            ? { ...p, caption: editCaption || null, taken_at: editTakenAt || null }
+            : p
+        )
+      );
+      setEditingId(null);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "저장 실패");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -354,7 +394,7 @@ export default function AdminPhotosPage() {
           ) : (
             <div className="space-y-3">
               {photos.map((photo) => (
-                <div key={photo.id} className="bg-white rounded-xl border border-gray-100 flex items-center gap-4 p-3">
+                <div key={photo.id} className="bg-white rounded-xl border border-gray-100 flex items-start gap-4 p-3">
                   <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 relative">
                     <Image
                       src={photo.url}
@@ -364,24 +404,72 @@ export default function AdminPhotosPage() {
                       sizes="64px"
                     />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    {photo.caption ? (
-                      <p className="text-sm font-medium text-gray-800 truncate">{photo.caption}</p>
-                    ) : (
-                      <p className="text-sm text-gray-400 italic">캡션 없음</p>
-                    )}
-                    {photo.taken_at && (
-                      <p className="text-xs text-gray-400 mt-0.5">{photo.taken_at}</p>
-                    )}
-                    <p className="text-xs text-gray-300 mt-0.5 truncate">{photo.url.split("/").pop()}</p>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(photo)}
-                    disabled={deletingId === photo.id}
-                    className="flex-shrink-0 px-3 py-1.5 text-xs text-red-500 border border-red-100 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors"
-                  >
-                    {deletingId === photo.id ? "삭제 중..." : "삭제"}
-                  </button>
+
+                  {editingId === photo.id ? (
+                    /* 수정 폼 */
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <input
+                        type="text"
+                        value={editCaption}
+                        onChange={(e) => setEditCaption(e.target.value)}
+                        placeholder="캡션"
+                        className="w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
+                      />
+                      <input
+                        type="date"
+                        value={editTakenAt}
+                        onChange={(e) => setEditTakenAt(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditSave(photo)}
+                          disabled={saving}
+                          className="px-3 py-1.5 text-xs bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                        >
+                          {saving ? "저장 중..." : "저장"}
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          disabled={saving}
+                          className="px-3 py-1.5 text-xs border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* 표시 모드 */
+                    <div className="flex-1 min-w-0">
+                      {photo.caption ? (
+                        <p className="text-sm font-medium text-gray-800 truncate">{photo.caption}</p>
+                      ) : (
+                        <p className="text-sm text-gray-400 italic">캡션 없음</p>
+                      )}
+                      {photo.taken_at && (
+                        <p className="text-xs text-gray-400 mt-0.5">{photo.taken_at}</p>
+                      )}
+                      <p className="text-xs text-gray-300 mt-0.5 truncate">{photo.url.split("/").pop()}</p>
+                    </div>
+                  )}
+
+                  {editingId !== photo.id && (
+                    <div className="flex-shrink-0 flex gap-2">
+                      <button
+                        onClick={() => handleEditStart(photo)}
+                        className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        수정
+                      </button>
+                      <button
+                        onClick={() => handleDelete(photo)}
+                        disabled={deletingId === photo.id}
+                        className="px-3 py-1.5 text-xs text-red-500 border border-red-100 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors"
+                      >
+                        {deletingId === photo.id ? "삭제 중..." : "삭제"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

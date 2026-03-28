@@ -92,6 +92,24 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ success: true, url: publicUrl });
 }
 
+// PATCH: caption + taken_at 수정
+export async function PATCH(request: NextRequest) {
+  const token = await verifyAdmin(request);
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id, caption, taken_at } = await request.json();
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  const supabase = adminClient(token);
+  const { error } = await supabase
+    .from("photos")
+    .update({ caption: caption || null, taken_at: taken_at || null })
+    .eq("id", id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+}
+
 // DELETE: Storage + photos 테이블 delete
 export async function DELETE(request: NextRequest) {
   const token = await verifyAdmin(request);
