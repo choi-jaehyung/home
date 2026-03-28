@@ -4,15 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import Image from "next/image";
 
-const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
-const COMPRESS_TARGET = 3 * 1024 * 1024; // 3MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const COMPRESS_THRESHOLD = 4 * 1024 * 1024; // 4MB 초과 시 압축
+const COMPRESS_TARGET = 3.5 * 1024 * 1024; // 3.5MB 목표 (Vercel 4.5MB 한도 여유)
 const MAX_DIMENSION = 2560;
 
 async function compressImageFile(file: File): Promise<File> {
-  // GIF는 Canvas 재인코딩 시 애니메이션 손실 — 원본 반환
   if (file.type === "image/gif") return file;
-  // 이미 목표 크기 이하면 압축 불필요
-  if (file.size <= COMPRESS_TARGET) return file;
+  if (file.size <= COMPRESS_THRESHOLD) return file;
 
   return new Promise((resolve) => {
     const img = new window.Image();
@@ -31,14 +30,21 @@ async function compressImageFile(file: File): Promise<File> {
       ctx.drawImage(img, 0, 0, width, height);
 
       const outType = file.type === "image/webp" ? "image/webp" : "image/jpeg";
-      canvas.toBlob(
-        (blob) => {
-          if (!blob || blob.size >= file.size) { resolve(file); return; }
-          resolve(new File([blob], file.name, { type: outType }));
-        },
-        outType,
-        0.85
-      );
+      const qualities = [0.85, 0.7, 0.55, 0.4, 0.25];
+      let idx = 0;
+
+      const tryCompress = () => {
+        canvas.toBlob((blob) => {
+          if (!blob) { resolve(file); return; }
+          if (blob.size <= COMPRESS_TARGET || idx === qualities.length - 1) {
+            resolve(blob.size < file.size ? new File([blob], file.name, { type: outType }) : file);
+            return;
+          }
+          idx++;
+          tryCompress();
+        }, outType, qualities[idx]);
+      };
+      tryCompress();
     };
     img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
     img.src = url;
@@ -119,7 +125,7 @@ export default function AdminPhotosPage() {
       return;
     }
     if (selected.size > MAX_FILE_SIZE) {
-      alert(`파일이 너무 큽니다. 4MB 이하 파일을 선택해주세요. (현재: ${(selected.size / 1024 / 1024).toFixed(1)}MB)`);
+      alert(`파일이 너무 큽니다. 10MB 이하 파일을 선택해주세요. (현재: ${(selected.size / 1024 / 1024).toFixed(1)}MB)`);
       return;
     }
     setImageFile(selected);

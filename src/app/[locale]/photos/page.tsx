@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import PhotoGrid from "./PhotoGrid";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -53,29 +53,7 @@ export default async function PhotosPage({ params }: Props) {
       {!photos || photos.length === 0 ? (
         <p className="text-gray-400 text-sm">아직 업로드된 사진이 없습니다.</p>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {(photos as Photo[]).map((photo) => (
-            <div
-              key={photo.id}
-              className="group relative aspect-square overflow-hidden rounded-xl bg-gray-100"
-            >
-              <Image
-                src={photo.url}
-                alt={photo.caption || ""}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                sizes="(max-width: 768px) 50vw, 33vw"
-              />
-              {photo.caption && (
-                <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <p className="text-white text-sm font-medium px-3 py-3 leading-snug">
-                    {photo.caption}
-                  </p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <PhotoGrid photos={photos as Photo[]} />
       )}
     </div>
   );
