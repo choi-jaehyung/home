@@ -36,12 +36,26 @@ function contentsUrl(filename: string) {
   return `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/content/posts/${encodeURIComponent(normalizeFilename(filename))}`;
 }
 
-// GET: 파일 존재 여부 확인
+// GET: 파일 목록 조회 / 파일 존재 여부 확인 / 파일 내용 조회
 export async function GET(request: NextRequest) {
   const isAdmin = await verifyAdmin(request);
   if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const filename = request.nextUrl.searchParams.get("filename");
+  const list = request.nextUrl.searchParams.get("list");
+  const withContent = request.nextUrl.searchParams.get("content");
+
+  // list=true: content/posts/ 파일 목록 반환
+  if (list === "true") {
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/content/posts`;
+    const res = await fetch(url, { headers: githubHeaders(), cache: "no-store" });
+    if (!res.ok) return NextResponse.json({ error: "GitHub API error" }, { status: 502 });
+    const files = await res.json() as { name: string }[];
+    return NextResponse.json({
+      files: files.filter((f) => f.name.endsWith(".md")).map((f) => f.name).sort(),
+    });
+  }
+
   if (!filename) return NextResponse.json({ error: "filename required" }, { status: 400 });
 
   const res = await fetch(contentsUrl(filename), {
@@ -52,7 +66,13 @@ export async function GET(request: NextRequest) {
   if (res.status === 404) return NextResponse.json({ exists: false });
   if (!res.ok) return NextResponse.json({ error: "GitHub API error" }, { status: 502 });
 
-  const data = await res.json();
+  const data = await res.json() as { sha: string; content: string };
+
+  // content=true: SHA와 함께 파일 내용(base64) 반환
+  if (withContent === "true") {
+    return NextResponse.json({ exists: true, sha: data.sha, content: data.content });
+  }
+
   return NextResponse.json({ exists: true, sha: data.sha });
 }
 

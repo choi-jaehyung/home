@@ -22,6 +22,11 @@ function toBase64(text: string): string {
   return btoa(unescape(encodeURIComponent(text)));
 }
 
+function fromBase64(b64: string): string {
+  const bytes = Uint8Array.from(atob(b64.replace(/\n/g, "")), (c) => c.charCodeAt(0));
+  return new TextDecoder("utf-8").decode(bytes);
+}
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -40,7 +45,7 @@ export default function UploadPage() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const [activeTab, setActiveTab] = useState<"md" | "image">("md");
+  const [activeTab, setActiveTab] = useState<"md" | "image" | "edit">("md");
 
   // ── MD 업로더 상태 ──
   const [file, setFile] = useState<File | null>(null);
@@ -64,6 +69,16 @@ export default function UploadPage() {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // ── 글 수정 상태 ──
+  const [editFiles, setEditFiles] = useState<string[]>([]);
+  const [editSelectedFile, setEditSelectedFile] = useState<string>("");
+  const [editContent, setEditContent] = useState<string>("");
+  const [editSha, setEditSha] = useState<string | null>(null);
+  const [editFrontmatter, setEditFrontmatter] = useState<Frontmatter>({});
+  const [editLoading, setEditLoading] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editResult, setEditResult] = useState<{ success: boolean; message: string; url?: string } | null>(null);
 
   const supabase = createClient();
 
@@ -273,6 +288,80 @@ export default function UploadPage() {
     setTimeout(() => setCopiedIndex(null), 2000);
   }
 
+  async function loadEditFileList() {
+    if (!accessToken) return;
+    setEditLoading(true);
+    try {
+      const res = await fetch("/api/upload-post?list=true", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json();
+      setEditFiles(data.files ?? []);
+      if (data.files?.length > 0) setEditSelectedFile(data.files[0]);
+    } catch {
+      // 무시
+    } finally {
+      setEditLoading(false);
+    }
+  }
+
+  async function loadEditFileContent() {
+    if (!editSelectedFile || !accessToken) return;
+    setEditLoading(true);
+    setEditResult(null);
+    try {
+      const res = await fetch(
+        `/api/upload-post?filename=${encodeURIComponent(editSelectedFile)}&content=true`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      const data = await res.json();
+      if (!data.exists) { alert("파일을 찾을 수 없습니다."); return; }
+      const decoded = fromBase64(data.content);
+      setEditContent(decoded);
+      setEditSha(data.sha);
+      setEditFrontmatter(parseFrontmatter(decoded));
+    } catch {
+      alert("파일 불러오기 실패");
+    } finally {
+      setEditLoading(false);
+    }
+  }
+
+  async function handleEditSave() {
+    if (!editSelectedFile || !editContent || !editSha) return;
+    setEditSaving(true);
+    setEditResult(null);
+    try {
+      const res = await fetch("/api/upload-post", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({
+          filename: editSelectedFile,
+          content: toBase64(editContent),
+          sha: editSha,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setEditResult({
+          success: true,
+          message: "저장 완료! Vercel 자동 배포가 시작됩니다 (보통 1분 내 반영).",
+          url: data.commitUrl,
+        });
+        setEditSha(null); // SHA 초기화 → 다시 불러오기 필요
+      } else {
+        setEditResult({ success: false, message: data.error || "저장 실패" });
+      }
+    } catch {
+      setEditResult({ success: false, message: "네트워크 오류가 발생했습니다." });
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
   async function handleGoogleLogin() {
     if (!supabase) return;
     localStorage.setItem("authReturn", window.location.pathname);
@@ -349,6 +438,14 @@ export default function UploadPage() {
             }`}
           >
             이미지 업로더
+          </button>
+          <button
+            onClick={() => { setActiveTab("edit"); if (editFiles.length === 0) loadEditFileList(); }}
+            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === "edit" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            글 수정
           </button>
         </div>
 
@@ -545,6 +642,118 @@ export default function UploadPage() {
                   ))}
                 </div>
               </div>
+            )}
+          </>
+        )}
+
+        {/* ── 글 수정 탭 ── */}
+        {activeTab === "edit" && (
+          <>
+            <p className="text-xs text-gray-400 mb-4">
+              GitHub의 <code className="bg-gray-100 px-1 rounded">content/posts/</code> MD 파일을 불러와 수정합니다.
+            </p>
+
+            {/* 파일 선택 */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">파일 선택</p>
+              {editLoading && editFiles.length === 0 ? (
+                <p className="text-sm text-gray-400">목록 로딩 중...</p>
+              ) : (
+                <div className="flex gap-2">
+                  <select
+                    value={editSelectedFile}
+                    onChange={(e) => {
+                      setEditSelectedFile(e.target.value);
+                      setEditContent("");
+                      setEditSha(null);
+                      setEditFrontmatter({});
+                      setEditResult(null);
+                    }}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-gray-400 transition-colors bg-white"
+                  >
+                    {editFiles.map((f) => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={loadEditFileContent}
+                    disabled={editLoading || !editSelectedFile}
+                    className="px-4 py-2 text-sm bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                  >
+                    {editLoading ? "로딩..." : "불러오기"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 편집 영역 */}
+            {editContent && (
+              <>
+                {/* Frontmatter 미리보기 */}
+                {Object.keys(editFrontmatter).length > 0 && (
+                  <div className="bg-white rounded-2xl p-5 border border-gray-100 mb-4">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Frontmatter</p>
+                    <dl className="space-y-1.5">
+                      {["title", "date", "tags", "description", "published", "language"].map((key) =>
+                        editFrontmatter[key] ? (
+                          <div key={key} className="flex gap-3 text-sm">
+                            <dt className="text-gray-400 w-24 flex-shrink-0">{key}</dt>
+                            <dd className="text-gray-800 break-all">{editFrontmatter[key]}</dd>
+                          </div>
+                        ) : null
+                      )}
+                    </dl>
+                  </div>
+                )}
+
+                {/* 텍스트 에디터 */}
+                <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                    편집 — {editSelectedFile}
+                  </p>
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => {
+                      setEditContent(e.target.value);
+                      setEditFrontmatter(parseFrontmatter(e.target.value));
+                    }}
+                    className="w-full h-[60vh] px-3 py-2.5 text-sm font-mono border border-gray-200 rounded-xl focus:outline-none focus:border-gray-400 transition-colors resize-y leading-relaxed"
+                    spellCheck={false}
+                  />
+                </div>
+
+                {/* 저장 버튼 */}
+                <button
+                  onClick={handleEditSave}
+                  disabled={editSaving || !editSha}
+                  className="w-full py-3 bg-black text-white text-sm font-medium rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {editSaving ? "저장 중..." : editSha ? "저장 (GitHub 커밋)" : "저장 완료 — 다시 불러오기 후 수정 가능"}
+                </button>
+
+                {/* 저장 결과 */}
+                {editResult && (
+                  <div
+                    className={`mt-4 rounded-2xl p-4 text-sm ${
+                      editResult.success
+                        ? "bg-green-50 text-green-800 border border-green-100"
+                        : "bg-red-50 text-red-800 border border-red-100"
+                    }`}
+                  >
+                    <p>{editResult.message}</p>
+                    {editResult.url && (
+                      <a
+                        href={editResult.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 block text-xs underline opacity-70 hover:opacity-100"
+                      >
+                        커밋 확인 →
+                      </a>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
