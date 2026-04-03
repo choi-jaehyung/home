@@ -511,8 +511,8 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                             <select value={ua.suit}
                               onChange={e => handleChange(row, col, "suit", e.target.value)}
                               style={{textAlignLast:"center"}}
-                              className={`w-full flex-1 text-2xl bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
-                                ${ua.suit === "" ? "text-blue-600" : (ua.suit === "H" || ua.suit === "D") ? "text-red-600" : "text-gray-900"}
+                              className={`w-full flex-1 bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
+                                ${ua.suit === "" ? "text-xl text-blue-600" : (ua.suit === "H" || ua.suit === "D") ? "text-2xl text-red-600" : "text-2xl text-gray-900"}
                                 ${sWrong ? "border-red-400" : "border-gray-300"}`}
                             >
                               <option value="">?</option>
