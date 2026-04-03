@@ -43,6 +43,7 @@ const SUITS: Suit[] = ["S", "H", "D", "C"];
 const VALUES: Value[] = ["8", "9", "10", "J", "Q", "K", "A"];
 const SUIT_SYM: Record<Suit, string> = { S: "♠", H: "♥", D: "♦", C: "♣" };
 const SUIT_CLR: Record<Suit, string> = { S: "text-slate-800", H: "text-red-600", D: "text-red-600", C: "text-slate-800" };
+const SUIT_OPT_CLR: Record<Suit, string> = { S: "#1e293b", H: "#dc2626", D: "#dc2626", C: "#1e293b" };
 const HIDDEN: Record<Difficulty, number> = { easy: 16, medium: 19, hard: 22 };
 const MAX_HINTS = 3;
 
@@ -422,37 +423,37 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
 
   // 공개된 select의 색상 클래스
   const revealedSuitCls = (suit: Suit) =>
-    `w-full flex-1 text-sm bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold ${SUIT_CLR[suit]}`;
+    `w-full flex-1 text-2xl bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold ${SUIT_CLR[suit]}`;
   const revealedValCls = (suit: Suit) =>
-    `w-full flex-1 text-sm bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold ${SUIT_CLR[suit]}`;
+    `w-full flex-1 text-xl bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold ${SUIT_CLR[suit]}`;
 
   return (
     <div className="min-h-[100dvh] bg-gray-50 py-3 px-2 sm:px-4 flex flex-col">
 
       {/* 상태 배너 */}
       {status === "correct" && (
-        <div className="max-w-5xl mx-auto w-full mb-2 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-2 text-emerald-800 text-center font-semibold flex-shrink-0">
+        <div className="max-w-4xl mx-auto w-full mb-2 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-2 text-emerald-800 text-center font-semibold flex-shrink-0">
           🎉 {t.correct_message}
         </div>
       )}
       {status === "incorrect" && (
-        <div className="max-w-5xl mx-auto w-full mb-2 bg-red-50 border border-red-300 rounded-xl px-4 py-2 text-red-700 text-center flex-shrink-0">
+        <div className="max-w-4xl mx-auto w-full mb-2 bg-red-50 border border-red-300 rounded-xl px-4 py-2 text-red-700 text-center flex-shrink-0">
           {t.incorrect_message}
         </div>
       )}
 
       {/* 본문: 보드 + 트래커 */}
-      <div className="max-w-5xl mx-auto w-full flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+      <div className="max-w-4xl mx-auto w-full flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
 
         {/* ── 게임 보드 ── */}
         <div className="flex-1 flex flex-col min-h-0">
           {/* 보드 컨테이너 */}
           <div className="bg-gray-300 p-2 rounded-lg shadow-xl">
 
-            {/* 타이틀 행: col-span-5 타이틀 + 반대각선 족보 */}
-            <div className="grid grid-cols-6 gap-1 mb-1">
-              <div className="col-span-5 flex flex-col justify-center px-2 h-14">
-                <h1 className="text-xl md:text-2xl font-bold text-gray-800 leading-tight" style={{fontFamily:"Georgia, serif"}}>{t.title}</h1>
+            {/* 타이틀 행: col-span-5 타이틀(중앙) + 반대각선 족보 */}
+            <div className="grid grid-cols-6 gap-1 mb-1 items-stretch">
+              <div className="col-span-5 flex flex-col justify-center items-center text-center px-2 py-1">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight" style={{fontFamily:"Georgia, serif"}}>{t.title}</h1>
                 <div className="flex items-center gap-2 text-xs md:text-sm text-gray-600 mt-0.5">
                   <span>{t.difficulty}: <span className="font-semibold">{t[difficulty]}</span></span>
                   <span>·</span>
@@ -460,8 +461,8 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                   <button onClick={() => setShowRules(true)} className="ml-1 h-5 w-5 bg-gray-400 hover:bg-gray-500 text-white font-bold rounded-full flex items-center justify-center text-xs flex-shrink-0 transition-colors">?</button>
                 </div>
               </div>
-              <div className="h-14 rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                <span className="-rotate-45 inline-block text-xs md:text-sm px-0.5">{hands[11].name}</span>
+              <div className="aspect-square rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
+                <span className="-rotate-45 inline-block text-sm md:text-base px-0.5 leading-tight">{hands[11].name}</span>
               </div>
             </div>
 
@@ -488,7 +489,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                             className={revealedSuitCls(card.suit)}
                             style={{textAlignLast:"center"}}
                           >
-                            {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
+                            {SUITS.map(s => <option key={s} value={s} style={{color: SUIT_OPT_CLR[s]}}>{SUIT_SYM[s]}</option>)}
                           </select>
                           <select disabled value={card.value}
                             className={revealedValCls(card.suit)}
@@ -504,18 +505,18 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                               className={revealedSuitCls(card.suit)}
                               style={{textAlignLast:"center"}}
                             >
-                              {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
+                              {SUITS.map(s => <option key={s} value={s} style={{color: SUIT_OPT_CLR[s]}}>{SUIT_SYM[s]}</option>)}
                             </select>
                           ) : (
                             <select value={ua.suit}
                               onChange={e => handleChange(row, col, "suit", e.target.value)}
                               style={{textAlignLast:"center"}}
-                              className={`w-full flex-1 text-sm bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
+                              className={`w-full flex-1 text-2xl bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
                                 ${ua.suit === "" ? "text-blue-600" : (ua.suit === "H" || ua.suit === "D") ? "text-red-600" : "text-gray-900"}
                                 ${sWrong ? "border-red-400" : "border-gray-300"}`}
                             >
                               <option value="">?</option>
-                              {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
+                              {SUITS.map(s => <option key={s} value={s} style={{color: SUIT_OPT_CLR[s]}}>{SUIT_SYM[s]}</option>)}
                             </select>
                           )}
                           {ds.showRank ? (
@@ -529,7 +530,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                             <select value={ua.value}
                               onChange={e => handleChange(row, col, "value", e.target.value)}
                               style={{textAlignLast:"center"}}
-                              className={`w-full flex-1 text-sm bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
+                              className={`w-full flex-1 text-xl bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
                                 ${ua.value === "" ? "text-blue-600" : (ua.suit === "H" || ua.suit === "D") ? "text-red-600" : "text-gray-900"}
                                 ${vWrong ? "border-red-400" : "border-gray-300"}`}
                             >
@@ -544,7 +545,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                 })}
                 {/* 행 족보 셀 */}
                 <div className="aspect-square rounded-lg shadow-sm bg-yellow-200 text-yellow-800 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                  <span className="text-xs md:text-sm px-0.5">{hands[row].name}</span>
+                  <span className="text-sm md:text-base px-0.5">{hands[row].name}</span>
                 </div>
               </div>
             ))}
@@ -553,11 +554,11 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
             <div className="grid grid-cols-6 gap-1">
               {[0,1,2,3,4].map(col => (
                 <div key={col} className="aspect-square rounded-lg shadow-sm bg-yellow-200 text-yellow-800 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                  <span className="text-xs md:text-sm px-0.5">{hands[5+col].name}</span>
+                  <span className="text-sm md:text-base px-0.5">{hands[5+col].name}</span>
                 </div>
               ))}
               <div className="aspect-square rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                <span className="rotate-45 inline-block text-xs md:text-sm px-0.5">{hands[10].name}</span>
+                <span className="rotate-45 inline-block text-sm md:text-base px-0.5">{hands[10].name}</span>
               </div>
             </div>
           </div>
