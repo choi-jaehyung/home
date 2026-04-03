@@ -424,8 +424,8 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
   // 공개된 select의 색상 클래스
   const revealedSuitCls = (_suit: Suit) =>
     `w-full flex-1 text-xl bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold`;
-  const revealedValCls = (suit: Suit) =>
-    `w-full flex-1 text-xl bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold ${SUIT_CLR[suit]}`;
+  const revealedValCls = (suit: Suit | "") =>
+    `w-full flex-1 text-xl bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold ${suit ? SUIT_CLR[suit as Suit] : "text-gray-400"}`;
 
   return (
     <div className="min-h-[100dvh] bg-gray-50 py-3 px-2 sm:px-4 flex flex-col">
@@ -521,7 +521,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                           )}
                           {ds.showRank ? (
                             <select disabled value={card.value}
-                              className={revealedValCls(card.suit)}
+                              className={revealedValCls(ds.showSuit ? card.suit : ua.suit)}
                               style={{textAlignLast:"center"}}
                             >
                               {VALUES.map(v => <option key={v} value={v}>{v}</option>)}
@@ -531,7 +531,10 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                               onChange={e => handleChange(row, col, "value", e.target.value)}
                               style={{textAlignLast:"center"}}
                               className={`w-full flex-1 text-xl bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
-                                ${ua.value === "" ? "text-blue-600" : (ua.suit === "H" || ua.suit === "D") ? "text-red-600" : "text-gray-900"}
+                                ${ua.value === "" ? "text-blue-600"
+                                  : (!ds.showSuit && ua.suit === "") ? "text-gray-400"
+                                  : (ds.showSuit ? card.suit : ua.suit) === "H" || (ds.showSuit ? card.suit : ua.suit) === "D" ? "text-red-600"
+                                  : "text-gray-900"}
                                 ${vWrong ? "border-red-400" : "border-gray-300"}`}
                             >
                               <option value="">?</option>
