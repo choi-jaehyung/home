@@ -3,7 +3,8 @@
     "home": "ホーム",
     "about": "プロフィール",
     "career": "経歴",
-    "articles": "記事"
+    "articles": "記事",
+    "works": "Works"
   },
   "home": {
     "hero_title": "こんにちは",
@@ -34,5 +35,50 @@
   },
   "footer": {
     "rights": "All rights reserved."
+  },
+  "works": {
+    "title": "Works",
+    "subtitle": "作ったもの",
+    "cross_poker": {
+      "title": "Cross Poker",
+      "description": "5×5ボードでポーカーの役を手がかりに隠れたカードを推理する論理パズル"
+    }
+  },
+  "crossPoker": {
+    "title": "Cross Poker",
+    "subtitle": "ポーカーの役を手がかりに隠れたカードを当てよう",
+    "difficulty": "難易度",
+    "easy": "かんたん",
+    "medium": "ふつう",
+    "hard": "むずかしい",
+    "new_game": "新しいゲーム",
+    "check": "答え合わせ",
+    "hint": "ヒント",
+    "undo": "元に戻す",
+    "reveal_all": "全て公開",
+    "hints_left": "ヒント残り{count}回",
+    "correct": "正解！",
+    "incorrect": "不正解",
+    "correct_message": "おめでとうございます！全カード正解です。",
+    "incorrect_message": "間違いがあります。もう一度挑戦してください。",
+    "select_suit": "スート",
+    "select_value": "数字",
+    "card_tracker": "カード状況",
+    "remaining": "残りカード",
+    "how_to_play": "遊び方",
+    "rules_text": "28枚(8〜A、4スート)から25枚を5×5ボードに配置します。各行・列・対角線はポーカーの役を作っています。公開カードと役のヒントを使って隠れたカードを推理してください。",
+    "time": "タイム",
+    "suit_spade": "♠",
+    "suit_heart": "♥",
+    "suit_diamond": "♦",
+    "suit_club": "♣",
+    "difficulty_select": "難易度選択",
+    "start_game": "スタート",
+    "hidden_cards": "隠れたカード",
+    "cards_count": "{count}枚",
+    "legend_revealed": "公開済み",
+    "legend_entered": "入力済み",
+    "legend_duplicate": "重複!",
+    "legend_not_used": "ボード外"
   }
 }

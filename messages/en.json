@@ -3,7 +3,8 @@
     "home": "Home",
     "about": "About",
     "career": "Career",
-    "articles": "Articles"
+    "articles": "Articles",
+    "works": "Works"
   },
   "home": {
     "hero_title": "Hello",
@@ -34,5 +35,50 @@
   },
   "footer": {
     "rights": "All rights reserved."
+  },
+  "works": {
+    "title": "Works",
+    "subtitle": "Things I've made",
+    "cross_poker": {
+      "title": "Cross Poker",
+      "description": "A logic deduction puzzle — figure out the hidden cards using poker hand clues on a 5×5 board"
+    }
+  },
+  "crossPoker": {
+    "title": "Cross Poker",
+    "subtitle": "Deduce hidden cards using poker hand clues",
+    "difficulty": "Difficulty",
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard",
+    "new_game": "New Game",
+    "check": "Check",
+    "hint": "Hint",
+    "undo": "Undo",
+    "reveal_all": "Reveal All",
+    "hints_left": "{count} hints left",
+    "correct": "Correct!",
+    "incorrect": "Wrong",
+    "correct_message": "Congratulations! You found all hidden cards.",
+    "incorrect_message": "Some cards are wrong. Try again.",
+    "select_suit": "Suit",
+    "select_value": "Value",
+    "card_tracker": "Card Tracker",
+    "remaining": "Remaining",
+    "how_to_play": "How to Play",
+    "rules_text": "25 of 28 cards (8–A, 4 suits) are placed on a 5×5 board. Each row, column, and diagonal forms a poker hand. Use the revealed cards and hand clues to deduce the hidden ones.",
+    "time": "Time",
+    "suit_spade": "♠",
+    "suit_heart": "♥",
+    "suit_diamond": "♦",
+    "suit_club": "♣",
+    "difficulty_select": "Select Difficulty",
+    "start_game": "Start",
+    "hidden_cards": "Hidden Cards",
+    "cards_count": "{count} cards",
+    "legend_revealed": "Revealed",
+    "legend_entered": "Entered",
+    "legend_duplicate": "Duplicate!",
+    "legend_not_used": "Not on board"
   }
 }

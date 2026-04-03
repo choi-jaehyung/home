@@ -3,7 +3,8 @@
     "home": "홈",
     "about": "소개",
     "career": "경력",
-    "articles": "글"
+    "articles": "글",
+    "works": "Works"
   },
   "home": {
     "hero_title": "안녕하세요",
@@ -34,5 +35,50 @@
   },
   "footer": {
     "rights": "All rights reserved."
+  },
+  "works": {
+    "title": "Works",
+    "subtitle": "직접 만든 것들",
+    "cross_poker": {
+      "title": "Cross Poker",
+      "description": "5×5 보드에서 포커 족보를 단서로 숨겨진 카드를 맞히는 논리 추론 퍼즐"
+    }
+  },
+  "crossPoker": {
+    "title": "Cross Poker",
+    "subtitle": "포커 족보를 단서로 숨겨진 카드를 맞혀라",
+    "difficulty": "난이도",
+    "easy": "쉬움",
+    "medium": "보통",
+    "hard": "어려움",
+    "new_game": "새 게임",
+    "check": "정답 확인",
+    "hint": "힌트",
+    "undo": "실행취소",
+    "reveal_all": "전체 공개",
+    "hints_left": "힌트 {count}회 남음",
+    "correct": "정답!",
+    "incorrect": "오답",
+    "correct_message": "축하합니다! 모든 카드를 맞혔습니다.",
+    "incorrect_message": "틀린 카드가 있습니다. 다시 시도해보세요.",
+    "select_suit": "무늬",
+    "select_value": "숫자",
+    "card_tracker": "카드 현황",
+    "remaining": "남은 카드",
+    "how_to_play": "게임 방법",
+    "rules_text": "28장(8~A, 4무늬)에서 25장을 5×5 보드에 배치합니다. 각 행·열·대각선은 포커 족보를 이룹니다. 공개된 카드와 족보 단서를 이용해 숨겨진 카드를 맞혀보세요.",
+    "time": "시간",
+    "suit_spade": "♠",
+    "suit_heart": "♥",
+    "suit_diamond": "♦",
+    "suit_club": "♣",
+    "difficulty_select": "난이도 선택",
+    "start_game": "시작",
+    "hidden_cards": "숨겨진 카드",
+    "cards_count": "{count}장",
+    "legend_revealed": "공개됨",
+    "legend_entered": "입력됨",
+    "legend_duplicate": "중복!",
+    "legend_not_used": "없음"
   }
 }
