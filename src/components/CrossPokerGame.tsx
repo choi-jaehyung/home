@@ -60,16 +60,16 @@ function evalHand(cards: Card[]): HandResult {
     vals.reduce((acc, v) => { acc[v] = (acc[v] || 0) + 1; return acc; }, {} as Record<number, number>)
   ).sort((a, b) => b - a);
 
-  if (isFlush && isStraight && sorted[0] === 2) return { name: "Royal Flush", rank: 9 };
-  if (isFlush && isStraight) return { name: "Str. Flush", rank: 8 };
-  if (counts[0] === 4) return { name: "Four of Kind", rank: 7 };
-  if (counts[0] === 3 && counts[1] === 2) return { name: "Full House", rank: 6 };
+  if (isFlush && isStraight && sorted[0] === 2) return { name: "Royal\nFlush", rank: 9 };
+  if (isFlush && isStraight) return { name: "Straight\nFlush", rank: 8 };
+  if (counts[0] === 4) return { name: "Four of\nKind", rank: 7 };
+  if (counts[0] === 3 && counts[1] === 2) return { name: "Full\nHouse", rank: 6 };
   if (isFlush) return { name: "Flush", rank: 5 };
   if (isStraight) return { name: "Straight", rank: 4 };
-  if (counts[0] === 3) return { name: "Three of Kind", rank: 3 };
-  if (counts[0] === 2 && counts[1] === 2) return { name: "Two Pair", rank: 2 };
-  if (counts[0] === 2) return { name: "One Pair", rank: 1 };
-  return { name: "High Card", rank: 0 };
+  if (counts[0] === 3) return { name: "Three of\nKind", rank: 3 };
+  if (counts[0] === 2 && counts[1] === 2) return { name: "Two\nPair", rank: 2 };
+  if (counts[0] === 2) return { name: "One\nPair", rank: 1 };
+  return { name: "High\nCard", rank: 0 };
 }
 
 function allHands(b: Card[][]): HandResult[] {
@@ -462,7 +462,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                 </div>
               </div>
               <div className="aspect-square rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                <span className="-rotate-45 inline-block text-sm md:text-base px-0.5 leading-tight">{hands[11].name}</span>
+                <span className="-rotate-45 inline-block text-sm md:text-base px-0.5 leading-tight whitespace-pre-line text-center">{hands[11].name}</span>
               </div>
             </div>
 
@@ -548,7 +548,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                 })}
                 {/* 행 족보 셀 */}
                 <div className="aspect-square rounded-lg shadow-sm bg-yellow-200 text-yellow-800 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                  <span className="text-sm md:text-base px-0.5">{hands[row].name}</span>
+                  <span className="text-sm md:text-base px-0.5 whitespace-pre-line">{hands[row].name}</span>
                 </div>
               </div>
             ))}
@@ -557,11 +557,11 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
             <div className="grid grid-cols-6 gap-1">
               {[0,1,2,3,4].map(col => (
                 <div key={col} className="aspect-square rounded-lg shadow-sm bg-yellow-200 text-yellow-800 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                  <span className="text-sm md:text-base px-0.5">{hands[5+col].name}</span>
+                  <span className="text-sm md:text-base px-0.5 whitespace-pre-line">{hands[5+col].name}</span>
                 </div>
               ))}
               <div className="aspect-square rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                <span className="rotate-45 inline-block text-sm md:text-base px-0.5">{hands[10].name}</span>
+                <span className="rotate-45 inline-block text-sm md:text-base px-0.5 whitespace-pre-line text-center">{hands[10].name}</span>
               </div>
             </div>
           </div>
