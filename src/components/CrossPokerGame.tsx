@@ -190,28 +190,10 @@ function makeDisplay(diff: Difficulty): CellDisplay[][] {
 }
 
 // ============================================================
-// UI: 족보 배지
+// UI: 족보 셀 (카드와 동일한 크기)
 // ============================================================
-const HAND_CLR: Record<number, string> = {
-  9: "bg-yellow-400 text-yellow-900",
-  8: "bg-yellow-300 text-yellow-900",
-  7: "bg-orange-500 text-white",
-  6: "bg-orange-400 text-white",
-  5: "bg-emerald-600 text-white",
-  4: "bg-teal-500 text-white",
-  3: "bg-sky-500 text-white",
-  2: "bg-sky-400 text-white",
-  1: "bg-slate-400 text-white",
-  0: "bg-slate-200 text-slate-600",
-};
-
-function HandBadge({ hand }: { hand: HandResult }) {
-  return (
-    <span className={`${HAND_CLR[hand.rank] ?? HAND_CLR[0]} text-xs px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap`}>
-      {hand.name}
-    </span>
-  );
-}
+// 행/열 족보: bg-yellow-200 text-yellow-800
+// 대각선 족보: bg-yellow-400 text-yellow-900
 
 // ============================================================
 // UI: 규칙 모달
@@ -424,15 +406,25 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
 
   const { board, display, answers, hands, status, hints, difficulty } = gs;
 
-  // select 공통 클래스 (라이트 테마)
-  const selectBase = "flex-1 min-w-0 text-sm bg-white border border-gray-300 text-gray-800 rounded py-1 text-center focus:outline-none focus:border-blue-400 cursor-pointer";
-  const selectWrong = "flex-1 min-w-0 text-sm bg-white border border-red-400 text-gray-800 rounded py-1 text-center focus:outline-none cursor-pointer";
+  // 카드 셀 border 색상 결정 헬퍼
+  const getCellBorder = (row: number, col: number) => {
+    const ds = display[row][col];
+    const full = ds.showSuit && ds.showRank;
+    const wc = wrongCells?.[row][col];
+    const sWrong = !ds.showSuit && !!wc && !wc.suit;
+    const vWrong = !ds.showRank && !!wc && !wc.value;
+    const anyWrong = sWrong || vWrong;
+    const allRight = !!wc && !anyWrong && !full;
+    if (anyWrong) return "border-red-500";
+    if (allRight) return "border-emerald-500";
+    return "border-transparent";
+  };
 
   return (
     <div className="min-h-[100dvh] bg-gray-50 py-4 px-2 sm:px-4 flex flex-col">
 
       {/* 헤더 */}
-      <div className="max-w-4xl mx-auto w-full mb-3 flex items-center justify-between flex-shrink-0">
+      <div className="max-w-5xl mx-auto w-full mb-3 flex items-center justify-between flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-gray-900">{t.title}</h1>
           <p className="text-gray-500 text-sm">
@@ -444,7 +436,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
           <button onClick={() => setShowRules(true)}
             className="text-gray-500 hover:text-gray-900 border border-gray-300 rounded-lg px-3 py-1.5 transition-colors bg-white">?</button>
           <button onClick={() => { setShowDiff(true); setTimerOn(false); }}
-            className="text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg px-3 py-1.5 transition-colors bg-white font-medium">
+            className="text-sm text-white bg-blue-600 hover:bg-blue-500 rounded-lg px-3 py-1.5 transition-colors font-medium">
             {t.new_game}
           </button>
         </div>
@@ -452,34 +444,37 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
 
       {/* 상태 배너 */}
       {status === "correct" && (
-        <div className="max-w-4xl mx-auto w-full mb-3 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-2.5 text-emerald-800 text-center font-semibold flex-shrink-0">
+        <div className="max-w-5xl mx-auto w-full mb-3 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-2.5 text-emerald-800 text-center font-semibold flex-shrink-0">
           🎉 {t.correct_message}
         </div>
       )}
       {status === "incorrect" && (
-        <div className="max-w-4xl mx-auto w-full mb-3 bg-red-50 border border-red-300 rounded-xl px-4 py-2.5 text-red-700 text-center flex-shrink-0">
+        <div className="max-w-5xl mx-auto w-full mb-3 bg-red-50 border border-red-300 rounded-xl px-4 py-2.5 text-red-700 text-center flex-shrink-0">
           {t.incorrect_message}
         </div>
       )}
 
       {/* 본문: 보드 + 트래커 */}
-      <div className="max-w-4xl mx-auto w-full flex flex-col lg:flex-row gap-3 flex-1 min-h-0">
+      <div className="max-w-5xl mx-auto w-full flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
 
         {/* ── 게임 보드 ── */}
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="grid grid-cols-6 gap-1.5">
-
-            {/* 반대각선 — 우상단 */}
-            <div className="col-span-5" />
-            <div className="flex items-center justify-center h-8">
-              <span className="-rotate-45 inline-block">
-                <HandBadge hand={hands[11]} />
-              </span>
+          {/* 보드 컨테이너 */}
+          <div className="bg-gray-300 p-3 md:p-4 rounded-lg shadow-xl">
+            {/* 6×6 그리드: 카드(5열) + 족보(1열), 족보(1행) + 카드(5행) + 족보(1행) */}
+            {/* 반대각선 족보 (우상단) */}
+            <div className="grid grid-cols-6 gap-1.5 mb-1.5">
+              <div className="col-span-5" />
+              <div className={`aspect-[5/6] rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight`}>
+                <span className="-rotate-45 inline-block text-xs md:text-sm px-0.5">
+                  {hands[11].name}
+                </span>
+              </div>
             </div>
 
             {/* 카드 행 0–4 */}
             {[0,1,2,3,4].map(row => (
-              <React.Fragment key={row}>
+              <div key={row} className="grid grid-cols-6 gap-1.5 mb-1.5">
                 {[0,1,2,3,4].map(col => {
                   const ds = display[row][col];
                   const card = board[row][col];
@@ -488,177 +483,173 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                   const wc = wrongCells?.[row][col];
                   const sWrong = !ds.showSuit && !!wc && !wc.suit;
                   const vWrong = !ds.showRank && !!wc && !wc.value;
-                  const anyWrong = sWrong || vWrong;
-                  const allRight = !!wc && !anyWrong && !full;
+                  const borderCls = getCellBorder(row, col);
 
                   return (
                     <div key={`${row}-${col}`}
-                      className={`aspect-[3/2] rounded-lg border-2 flex items-center justify-center overflow-hidden
-                        ${full
-                          ? "bg-white border-gray-200 shadow-sm"
-                          : anyWrong
-                          ? "bg-red-50 border-red-400"
-                          : allRight
-                          ? "bg-emerald-50 border-emerald-400"
-                          : "bg-white border-gray-300 shadow-sm"
-                        }`}
+                      className={`aspect-[5/6] bg-white flex flex-col gap-1 p-1 border-4 rounded-lg shadow-sm overflow-hidden ${borderCls}`}
                     >
                       {full ? (
-                        // 공개된 카드
-                        <div className="flex items-center justify-center gap-1 w-full select-none">
-                          <span className={`text-xl font-bold leading-none ${SUIT_CLR[card.suit]}`}>
-                            {SUIT_SYM[card.suit]}
-                          </span>
-                          <span className={`text-base font-bold font-mono leading-none ${SUIT_CLR[card.suit]}`}>
-                            {card.value}
-                          </span>
-                        </div>
+                        // 공개된 카드: suit + rank 세로 배치
+                        <>
+                          <select disabled
+                            value={card.suit}
+                            className="w-full flex-1 text-xs bg-gray-200 opacity-100 text-black cursor-not-allowed rounded border-0 text-center appearance-none"
+                          >
+                            {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
+                          </select>
+                          <select disabled
+                            value={card.value}
+                            className="w-full flex-1 text-xs bg-gray-200 opacity-100 text-black cursor-not-allowed rounded border-0 text-center appearance-none"
+                          >
+                            {VALUES.map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </>
                       ) : (
-                        // 숨겨진 카드: 두 슬롯 모두 flex-1로 동일 너비 보장
-                        <div className="flex items-center justify-center gap-0.5 px-1 w-full">
-                          {/* Suit 슬롯: 공개된 경우 flex-1 span, 숨겨진 경우 flex-1 select */}
-                          <div className="flex-1 min-w-0 flex items-center justify-center">
-                            {ds.showSuit ? (
-                              <span className={`text-lg font-bold leading-none ${SUIT_CLR[card.suit]}`}>
-                                {SUIT_SYM[card.suit]}
-                              </span>
-                            ) : (
-                              <select value={ua.suit}
-                                onChange={e => handleChange(row, col, "suit", e.target.value)}
-                                className={`w-full ${sWrong ? selectWrong : selectBase}`}
-                              >
-                                <option value="">?</option>
-                                {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
-                              </select>
-                            )}
-                          </div>
+                        // 숨겨진 카드: 각 슬롯 독립적으로 표시/입력
+                        <>
+                          {/* Suit 슬롯 */}
+                          {ds.showSuit ? (
+                            <select disabled
+                              value={card.suit}
+                              className="w-full flex-1 text-xs bg-gray-200 opacity-100 text-black cursor-not-allowed rounded border-0 text-center appearance-none"
+                            >
+                              {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
+                            </select>
+                          ) : (
+                            <select
+                              value={ua.suit}
+                              onChange={e => handleChange(row, col, "suit", e.target.value)}
+                              className={`w-full flex-1 text-xs bg-white border border-gray-300 rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
+                                ${ua.suit === "" ? "text-blue-600" : (ua.suit === "H" || ua.suit === "D") ? "text-red-600" : "text-gray-900"}
+                                ${sWrong ? "border-red-400" : "border-gray-300"}`}
+                            >
+                              <option value="">?</option>
+                              {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
+                            </select>
+                          )}
                           {/* Value 슬롯 */}
-                          <div className="flex-1 min-w-0 flex items-center justify-center">
-                            {ds.showRank ? (
-                              <span className={`text-base font-bold font-mono leading-none ${SUIT_CLR[card.suit]}`}>
-                                {card.value}
-                              </span>
-                            ) : (
-                              <select value={ua.value}
-                                onChange={e => handleChange(row, col, "value", e.target.value)}
-                                className={`w-full ${vWrong ? selectWrong : selectBase}`}
-                              >
-                                <option value="">?</option>
-                                {VALUES.map(v => <option key={v} value={v}>{v}</option>)}
-                              </select>
-                            )}
-                          </div>
-                        </div>
+                          {ds.showRank ? (
+                            <select disabled
+                              value={card.value}
+                              className="w-full flex-1 text-xs bg-gray-200 opacity-100 text-black cursor-not-allowed rounded border-0 text-center appearance-none"
+                            >
+                              {VALUES.map(v => <option key={v} value={v}>{v}</option>)}
+                            </select>
+                          ) : (
+                            <select
+                              value={ua.value}
+                              onChange={e => handleChange(row, col, "value", e.target.value)}
+                              className={`w-full flex-1 text-xs bg-white border border-gray-300 rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
+                                ${ua.value === "" ? "text-blue-600" : (ua.suit === "H" || ua.suit === "D") ? "text-red-600" : "text-gray-900"}
+                                ${vWrong ? "border-red-400" : "border-gray-300"}`}
+                            >
+                              <option value="">?</option>
+                              {VALUES.map(v => <option key={v} value={v}>{v}</option>)}
+                            </select>
+                          )}
+                        </>
                       )}
                     </div>
                   );
                 })}
-                {/* 행 족보 */}
-                <div className="flex items-center pl-1">
-                  <HandBadge hand={hands[row]} />
+                {/* 행 족보 셀 */}
+                <div className="aspect-[5/6] rounded-lg shadow-sm bg-yellow-200 text-yellow-800 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
+                  <span className="text-xs md:text-sm px-0.5">{hands[row].name}</span>
                 </div>
-              </React.Fragment>
-            ))}
-
-            {/* 열 족보 + 주대각선 */}
-            {[0,1,2,3,4].map(col => (
-              <div key={col} className="flex items-center justify-center pt-1">
-                <HandBadge hand={hands[5+col]} />
               </div>
             ))}
-            <div className="flex items-center justify-center pt-1 h-8">
-              <span className="rotate-45 inline-block">
-                <HandBadge hand={hands[10]} />
-              </span>
+
+            {/* 열 족보 행 + 주대각선 */}
+            <div className="grid grid-cols-6 gap-1.5">
+              {[0,1,2,3,4].map(col => (
+                <div key={col} className="aspect-[5/6] rounded-lg shadow-sm bg-yellow-200 text-yellow-800 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
+                  <span className="text-xs md:text-sm px-0.5">{hands[5+col].name}</span>
+                </div>
+              ))}
+              {/* 주대각선 족보 */}
+              <div className="aspect-[5/6] rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
+                <span className="rotate-45 inline-block text-xs md:text-sm px-0.5">
+                  {hands[10].name}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* 버튼 */}
-          <div className="flex gap-1.5 mt-3 flex-shrink-0">
-            <button onClick={handleCheck}
-              className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl transition-colors">
-              {t.check}
-            </button>
-            <button onClick={handleHint} disabled={hints >= MAX_HINTS}
-              className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors">
-              {t.hint} ({MAX_HINTS - hints})
+          <div className="flex gap-2 mt-3 flex-shrink-0">
+            <button onClick={() => { setShowDiff(true); setTimerOn(false); }}
+              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-colors">
+              {t.new_game}
             </button>
             <button onClick={handleUndo} disabled={!gs.history.length}
-              className="flex-1 py-2.5 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700 text-sm font-bold rounded-xl border border-gray-300 transition-colors">
+              className="flex-1 py-2.5 bg-gray-500 hover:bg-gray-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors">
               {t.undo}
             </button>
+            <button onClick={handleHint} disabled={hints >= MAX_HINTS}
+              className="flex-1 py-2.5 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors">
+              {t.hint} ({MAX_HINTS - hints})
+            </button>
+            <button onClick={handleCheck}
+              className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded-xl transition-colors">
+              {t.check}
+            </button>
             <button onClick={handleReveal}
-              className="flex-1 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-bold rounded-xl border border-gray-300 transition-colors">
+              className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white text-sm font-bold rounded-xl transition-colors">
               {t.reveal_all}
             </button>
           </div>
         </div>
 
         {/* ── 카드 트래커 ── */}
-        <div className="lg:w-40 flex-shrink-0 self-start">
-          <div className="bg-white border border-gray-200 rounded-xl p-2.5 shadow-sm">
-            <p className="text-gray-500 text-xs font-bold mb-2 uppercase tracking-wider">{t.card_tracker}</p>
+        <div className="bg-gray-200 p-3 rounded-lg shadow-lg w-56 flex-shrink-0 self-start">
+          <p className="text-gray-600 text-xs font-bold mb-2 uppercase tracking-wider">{t.card_tracker}</p>
 
-            {/* 4열 그리드: ♠ ♥ ♦ ♣ */}
-            <div className="grid grid-cols-4 gap-x-0.5">
-              {/* 헤더 */}
-              {SUITS.map(s => (
-                <div key={s} className={`text-center text-sm font-bold pb-1 border-b border-gray-200 ${SUIT_CLR[s]}`}>
-                  {SUIT_SYM[s]}
-                </div>
-              ))}
+          {/* 4열 그리드 */}
+          <div className="grid grid-cols-4 gap-1">
+            {VALUES.map(value =>
+              SUITS.map(suit => {
+                const k = `${suit}|${value}`;
+                const cnt = usage[k] || 0;
+                const onBoard = board.some(row => row.some(c => c.suit===suit && c.value===value));
+                const fullyShown = onBoard && board.some((row,r) =>
+                  row.some((c,col) => c.suit===suit && c.value===value && display[r][col].showSuit && display[r][col].showRank)
+                );
 
-              {/* 7행 × 4열 */}
-              {VALUES.map(value =>
-                SUITS.map(suit => {
-                  const k = `${suit}|${value}`;
-                  const cnt = usage[k] || 0;
-                  const onBoard = board.some(row => row.some(c => c.suit===suit && c.value===value));
-                  const fullyShown = onBoard && board.some((row,r) =>
-                    row.some((c,col) => c.suit===suit && c.value===value && display[r][col].showSuit && display[r][col].showRank)
-                  );
+                let icon: React.ReactNode = null;
+                let labelCls = "";
 
-                  // 표시
-                  const suitClr = SUIT_CLR[suit];
-                  let cellCls: string;
-                  let icon: string;
+                if (!onBoard) {
+                  labelCls = "text-gray-300";
+                } else if (cnt > 1) {
+                  labelCls = `${SUIT_CLR[suit]} font-bold`;
+                  icon = <span className="text-red-500 font-black text-xs leading-none">❗</span>;
+                } else if (cnt === 1) {
+                  labelCls = fullyShown ? "text-gray-400" : SUIT_CLR[suit];
+                  icon = <span className={`text-xs leading-none ${fullyShown ? "text-gray-400" : "text-green-500"}`}>✓</span>;
+                } else {
+                  labelCls = `${SUIT_CLR[suit]} opacity-40`;
+                }
 
-                  if (!onBoard) {
-                    cellCls = "text-gray-300";
-                    icon = "";
-                  } else if (cnt > 1) {
-                    cellCls = `${suitClr} font-bold`;
-                    icon = "!";
-                  } else if (cnt === 1) {
-                    cellCls = fullyShown ? "text-gray-400" : `${suitClr}`;
-                    icon = "✓";
-                  } else {
-                    cellCls = `${suitClr} opacity-40`;
-                    icon = "";
-                  }
+                return (
+                  <div key={`${suit}|${value}`}
+                    className="bg-white rounded px-1.5 py-1 flex justify-between items-center text-sm shadow-sm"
+                  >
+                    <span className={`text-xs font-mono leading-none ${labelCls}`}>
+                      {SUIT_SYM[suit]}{value}
+                    </span>
+                    {icon ? icon : <span className="w-3" />}
+                  </div>
+                );
+              })
+            )}
+          </div>
 
-                  return (
-                    <div key={`${suit}|${value}`} className="flex items-center justify-center gap-px py-0.5">
-                      <span className={`text-xs font-mono leading-none ${cellCls}`}>
-                        {value === "10" ? "T" : value}
-                      </span>
-                      {icon && (
-                        <span className={`text-[9px] leading-none ${cnt > 1 ? "text-red-500 font-black" : fullyShown ? "text-gray-400" : "text-emerald-500"}`}>
-                          {icon}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* 범례 */}
-            <div className="mt-2 pt-1.5 border-t border-gray-200 text-xs text-gray-400 space-y-0.5">
-              <div><span className="text-emerald-500">✓</span> {t.legend_entered}</div>
-              <div><span className="text-red-500 font-black">!</span> {t.legend_duplicate}</div>
-              <div><span className="text-gray-400">✓</span> {t.legend_revealed}</div>
-            </div>
+          {/* 범례 */}
+          <div className="mt-2 pt-1.5 border-t border-gray-300 text-xs text-gray-500 space-y-0.5">
+            <div><span className="text-green-500">✓</span> {t.legend_entered}</div>
+            <div><span className="text-red-500 font-black">❗</span> {t.legend_duplicate}</div>
+            <div><span className="text-gray-400">✓</span> {t.legend_revealed}</div>
           </div>
         </div>
       </div>
