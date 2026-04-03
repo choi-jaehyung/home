@@ -381,7 +381,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
   // ---- 난이도 선택 모달 ----
   if (showDiff || !gs) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 flex items-start justify-center pt-16 p-4">
         <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-sm w-full text-center shadow-lg">
           <div className="text-5xl mb-4">🃏</div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{t.title}</h1>
