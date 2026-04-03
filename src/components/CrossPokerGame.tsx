@@ -420,36 +420,23 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
     return "border-transparent";
   };
 
-  return (
-    <div className="min-h-[100dvh] bg-gray-50 py-4 px-2 sm:px-4 flex flex-col">
+  // 공개된 select의 색상 클래스
+  const revealedSuitCls = (suit: Suit) =>
+    `w-full flex-1 text-sm bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold ${SUIT_CLR[suit]}`;
+  const revealedValCls = (suit: Suit) =>
+    `w-full flex-1 text-sm bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold ${SUIT_CLR[suit]}`;
 
-      {/* 헤더 */}
-      <div className="max-w-5xl mx-auto w-full mb-3 flex items-center justify-between flex-shrink-0">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{t.title}</h1>
-          <p className="text-gray-500 text-sm">
-            {t.difficulty}: <span className="text-emerald-600 font-semibold">{t[difficulty]}</span>
-            {" · "}{t.time}: <span className="text-emerald-600 font-mono font-semibold">{fmt(elapsed)}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowRules(true)}
-            className="text-gray-500 hover:text-gray-900 border border-gray-300 rounded-lg px-3 py-1.5 transition-colors bg-white">?</button>
-          <button onClick={() => { setShowDiff(true); setTimerOn(false); }}
-            className="text-sm text-white bg-blue-600 hover:bg-blue-500 rounded-lg px-3 py-1.5 transition-colors font-medium">
-            {t.new_game}
-          </button>
-        </div>
-      </div>
+  return (
+    <div className="min-h-[100dvh] bg-gray-50 py-3 px-2 sm:px-4 flex flex-col">
 
       {/* 상태 배너 */}
       {status === "correct" && (
-        <div className="max-w-5xl mx-auto w-full mb-3 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-2.5 text-emerald-800 text-center font-semibold flex-shrink-0">
+        <div className="max-w-5xl mx-auto w-full mb-2 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-2 text-emerald-800 text-center font-semibold flex-shrink-0">
           🎉 {t.correct_message}
         </div>
       )}
       {status === "incorrect" && (
-        <div className="max-w-5xl mx-auto w-full mb-3 bg-red-50 border border-red-300 rounded-xl px-4 py-2.5 text-red-700 text-center flex-shrink-0">
+        <div className="max-w-5xl mx-auto w-full mb-2 bg-red-50 border border-red-300 rounded-xl px-4 py-2 text-red-700 text-center flex-shrink-0">
           {t.incorrect_message}
         </div>
       )}
@@ -460,21 +447,27 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
         {/* ── 게임 보드 ── */}
         <div className="flex-1 flex flex-col min-h-0">
           {/* 보드 컨테이너 */}
-          <div className="bg-gray-300 p-3 md:p-4 rounded-lg shadow-xl">
-            {/* 6×6 그리드: 카드(5열) + 족보(1열), 족보(1행) + 카드(5행) + 족보(1행) */}
-            {/* 반대각선 족보 (우상단) */}
-            <div className="grid grid-cols-6 gap-1.5 mb-1.5">
-              <div className="col-span-5" />
-              <div className={`aspect-[5/6] rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight`}>
-                <span className="-rotate-45 inline-block text-xs md:text-sm px-0.5">
-                  {hands[11].name}
-                </span>
+          <div className="bg-gray-300 p-2 rounded-lg shadow-xl">
+
+            {/* 타이틀 행: col-span-5 타이틀 + 반대각선 족보 */}
+            <div className="grid grid-cols-6 gap-1 mb-1">
+              <div className="col-span-5 flex flex-col justify-center px-2 h-14">
+                <h1 className="text-xl md:text-2xl font-bold text-gray-800 leading-tight" style={{fontFamily:"Georgia, serif"}}>{t.title}</h1>
+                <div className="flex items-center gap-2 text-xs md:text-sm text-gray-600 mt-0.5">
+                  <span>{t.difficulty}: <span className="font-semibold">{t[difficulty]}</span></span>
+                  <span>·</span>
+                  <span className="font-mono font-semibold">{fmt(elapsed)}</span>
+                  <button onClick={() => setShowRules(true)} className="ml-1 h-5 w-5 bg-gray-400 hover:bg-gray-500 text-white font-bold rounded-full flex items-center justify-center text-xs flex-shrink-0 transition-colors">?</button>
+                </div>
+              </div>
+              <div className="h-14 rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
+                <span className="-rotate-45 inline-block text-xs md:text-sm px-0.5">{hands[11].name}</span>
               </div>
             </div>
 
             {/* 카드 행 0–4 */}
             {[0,1,2,3,4].map(row => (
-              <div key={row} className="grid grid-cols-6 gap-1.5 mb-1.5">
+              <div key={row} className="grid grid-cols-6 gap-1 mb-1">
                 {[0,1,2,3,4].map(col => {
                   const ds = display[row][col];
                   const card = board[row][col];
@@ -487,40 +480,37 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
 
                   return (
                     <div key={`${row}-${col}`}
-                      className={`aspect-[5/6] bg-white flex flex-col gap-1 p-1 border-4 rounded-lg shadow-sm overflow-hidden ${borderCls}`}
+                      className={`aspect-square bg-white flex flex-col gap-0.5 p-0.5 border-4 rounded-lg shadow-sm overflow-hidden ${borderCls}`}
                     >
                       {full ? (
-                        // 공개된 카드: suit + rank 세로 배치
                         <>
-                          <select disabled
-                            value={card.suit}
-                            className="w-full flex-1 text-xs bg-gray-200 opacity-100 text-black cursor-not-allowed rounded border-0 text-center appearance-none"
+                          <select disabled value={card.suit}
+                            className={revealedSuitCls(card.suit)}
+                            style={{textAlignLast:"center"}}
                           >
                             {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
                           </select>
-                          <select disabled
-                            value={card.value}
-                            className="w-full flex-1 text-xs bg-gray-200 opacity-100 text-black cursor-not-allowed rounded border-0 text-center appearance-none"
+                          <select disabled value={card.value}
+                            className={revealedValCls(card.suit)}
+                            style={{textAlignLast:"center"}}
                           >
                             {VALUES.map(v => <option key={v} value={v}>{v}</option>)}
                           </select>
                         </>
                       ) : (
-                        // 숨겨진 카드: 각 슬롯 독립적으로 표시/입력
                         <>
-                          {/* Suit 슬롯 */}
                           {ds.showSuit ? (
-                            <select disabled
-                              value={card.suit}
-                              className="w-full flex-1 text-xs bg-gray-200 opacity-100 text-black cursor-not-allowed rounded border-0 text-center appearance-none"
+                            <select disabled value={card.suit}
+                              className={revealedSuitCls(card.suit)}
+                              style={{textAlignLast:"center"}}
                             >
                               {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
                             </select>
                           ) : (
-                            <select
-                              value={ua.suit}
+                            <select value={ua.suit}
                               onChange={e => handleChange(row, col, "suit", e.target.value)}
-                              className={`w-full flex-1 text-xs bg-white border border-gray-300 rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
+                              style={{textAlignLast:"center"}}
+                              className={`w-full flex-1 text-sm bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
                                 ${ua.suit === "" ? "text-blue-600" : (ua.suit === "H" || ua.suit === "D") ? "text-red-600" : "text-gray-900"}
                                 ${sWrong ? "border-red-400" : "border-gray-300"}`}
                             >
@@ -528,19 +518,18 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                               {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
                             </select>
                           )}
-                          {/* Value 슬롯 */}
                           {ds.showRank ? (
-                            <select disabled
-                              value={card.value}
-                              className="w-full flex-1 text-xs bg-gray-200 opacity-100 text-black cursor-not-allowed rounded border-0 text-center appearance-none"
+                            <select disabled value={card.value}
+                              className={revealedValCls(card.suit)}
+                              style={{textAlignLast:"center"}}
                             >
                               {VALUES.map(v => <option key={v} value={v}>{v}</option>)}
                             </select>
                           ) : (
-                            <select
-                              value={ua.value}
+                            <select value={ua.value}
                               onChange={e => handleChange(row, col, "value", e.target.value)}
-                              className={`w-full flex-1 text-xs bg-white border border-gray-300 rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
+                              style={{textAlignLast:"center"}}
+                              className={`w-full flex-1 text-sm bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
                                 ${ua.value === "" ? "text-blue-600" : (ua.suit === "H" || ua.suit === "D") ? "text-red-600" : "text-gray-900"}
                                 ${vWrong ? "border-red-400" : "border-gray-300"}`}
                             >
@@ -554,48 +543,45 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                   );
                 })}
                 {/* 행 족보 셀 */}
-                <div className="aspect-[5/6] rounded-lg shadow-sm bg-yellow-200 text-yellow-800 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
+                <div className="aspect-square rounded-lg shadow-sm bg-yellow-200 text-yellow-800 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
                   <span className="text-xs md:text-sm px-0.5">{hands[row].name}</span>
                 </div>
               </div>
             ))}
 
             {/* 열 족보 행 + 주대각선 */}
-            <div className="grid grid-cols-6 gap-1.5">
+            <div className="grid grid-cols-6 gap-1">
               {[0,1,2,3,4].map(col => (
-                <div key={col} className="aspect-[5/6] rounded-lg shadow-sm bg-yellow-200 text-yellow-800 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
+                <div key={col} className="aspect-square rounded-lg shadow-sm bg-yellow-200 text-yellow-800 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
                   <span className="text-xs md:text-sm px-0.5">{hands[5+col].name}</span>
                 </div>
               ))}
-              {/* 주대각선 족보 */}
-              <div className="aspect-[5/6] rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                <span className="rotate-45 inline-block text-xs md:text-sm px-0.5">
-                  {hands[10].name}
-                </span>
+              <div className="aspect-square rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
+                <span className="rotate-45 inline-block text-xs md:text-sm px-0.5">{hands[10].name}</span>
               </div>
             </div>
           </div>
 
           {/* 버튼 */}
-          <div className="flex gap-2 mt-3 flex-shrink-0">
+          <div className="flex gap-2 mt-2 flex-shrink-0">
             <button onClick={() => { setShowDiff(true); setTimerOn(false); }}
-              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-colors">
+              className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-colors">
               {t.new_game}
             </button>
             <button onClick={handleUndo} disabled={!gs.history.length}
-              className="flex-1 py-2.5 bg-gray-500 hover:bg-gray-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors">
+              className="flex-1 py-2 bg-gray-500 hover:bg-gray-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors">
               {t.undo}
             </button>
             <button onClick={handleHint} disabled={hints >= MAX_HINTS}
-              className="flex-1 py-2.5 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors">
+              className="flex-1 py-2 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors">
               {t.hint} ({MAX_HINTS - hints})
             </button>
             <button onClick={handleCheck}
-              className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded-xl transition-colors">
+              className="flex-1 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded-xl transition-colors">
               {t.check}
             </button>
             <button onClick={handleReveal}
-              className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white text-sm font-bold rounded-xl transition-colors">
+              className="flex-1 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-bold rounded-xl transition-colors">
               {t.reveal_all}
             </button>
           </div>
@@ -625,8 +611,8 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                   labelCls = `${SUIT_CLR[suit]} font-bold`;
                   icon = <span className="text-red-500 font-black text-xs leading-none">❗</span>;
                 } else if (cnt === 1) {
-                  labelCls = fullyShown ? "text-gray-400" : SUIT_CLR[suit];
-                  icon = <span className={`text-xs leading-none ${fullyShown ? "text-gray-400" : "text-green-500"}`}>✓</span>;
+                  labelCls = SUIT_CLR[suit];
+                  icon = <span className={`text-xs leading-none ${fullyShown ? "text-blue-400" : "text-green-500"}`}>✓</span>;
                 } else {
                   labelCls = `${SUIT_CLR[suit]} opacity-40`;
                 }
@@ -649,7 +635,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
           <div className="mt-2 pt-1.5 border-t border-gray-300 text-xs text-gray-500 space-y-0.5">
             <div><span className="text-green-500">✓</span> {t.legend_entered}</div>
             <div><span className="text-red-500 font-black">❗</span> {t.legend_duplicate}</div>
-            <div><span className="text-gray-400">✓</span> {t.legend_revealed}</div>
+            <div><span className="text-blue-400">✓</span> {t.legend_revealed}</div>
           </div>
         </div>
       </div>
