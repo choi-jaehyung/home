@@ -10,10 +10,7 @@ type Value = "8" | "9" | "10" | "J" | "Q" | "K" | "A";
 type Difficulty = "easy" | "medium" | "hard";
 
 interface Card { suit: Suit; value: Value; }
-
-/** 원본 로직: suit과 rank를 독립적으로 노출 (50개 슬롯 = 25칸 × 2) */
 interface CellDisplay { showSuit: boolean; showRank: boolean; }
-
 interface UserCell { suit: Suit | ""; value: Value | ""; }
 interface HandResult { name: string; rank: number; }
 
@@ -45,12 +42,15 @@ interface Translations {
 const SUITS: Suit[] = ["S", "H", "D", "C"];
 const VALUES: Value[] = ["8", "9", "10", "J", "Q", "K", "A"];
 const SUIT_SYM: Record<Suit, string> = { S: "♠", H: "♥", D: "♦", C: "♣" };
-const SUIT_CLR: Record<Suit, string> = { S: "text-slate-900", H: "text-red-600", D: "text-red-600", C: "text-slate-900" };
+// 카드 (흰 배경): 스페이드/클럽 = 짙은 회색, 하트/다이아 = 빨강
+const SUIT_CLR_LIGHT: Record<Suit, string> = { S: "text-slate-800", H: "text-red-600", D: "text-red-600", C: "text-slate-800" };
+// 트래커 (어두운 배경): 스페이드/클럽 = 밝은 회색, 하트/다이아 = 밝은 빨강
+const SUIT_CLR_DARK: Record<Suit, string> = { S: "text-slate-200", H: "text-red-400", D: "text-red-400", C: "text-slate-200" };
 const HIDDEN: Record<Difficulty, number> = { easy: 16, medium: 19, hard: 22 };
 const MAX_HINTS = 3;
 
 // ============================================================
-// POKER HAND EVALUATION (원본 로직과 동일)
+// POKER HAND EVALUATION
 // ============================================================
 function evalHand(cards: Card[]): HandResult {
   if (!cards || cards.length !== 5 || cards.some(c => !c)) return { name: "High Card", rank: 0 };
@@ -84,7 +84,7 @@ function allHands(b: Card[][]): HandResult[] {
 }
 
 // ============================================================
-// BOARD GENERATION (원본 generateSpecialBoard 로직 충실히 재현)
+// BOARD GENERATION (원본 generateSpecialBoard 로직)
 // ============================================================
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -111,19 +111,14 @@ function generateBoard(): Card[][] {
     const board: (Card | null)[][] = Array.from({length:5}, () => Array(5).fill(null));
     const fullDeck: Card[] = [];
     for (const s of SUITS) for (const v of VALUES) fullDeck.push({suit:s, value:v});
-    shuffle(fullDeck); // in-place via reference not needed, using Set approach below
 
-    // Use a Set to track availability (mirrors original deck = new Set(fullDeck.map(...)))
     const avail = new Map<string, Card>();
     for (const c of fullDeck) avail.set(`${c.suit}|${c.value}`, c);
 
-    // 2개 플러시 열 선택 (원본: colIndices.sort(() => 0.5 - Math.random()))
     const flushCols = shuffle([0,1,2,3,4]).slice(0, 2);
     const flushSuits = shuffle([...SUITS]).slice(0, 2);
-
     let ok = true;
 
-    // 플러시 열 채우기
     for (let i = 0; i < 2; i++) {
       const col = flushCols[i];
       const suit = flushSuits[i];
@@ -138,36 +133,30 @@ function generateBoard(): Card[][] {
     }
     if (!ok) continue;
 
-    // 3개 스트레이트 행 선택 (원본: rowIndices.sort(...))
     const straightRows = shuffle([0,1,2,3,4]).slice(0, 3);
     let deckArr = Array.from(avail.values());
 
     for (const r of straightRows) {
       const existing = board[r].filter((c): c is Card => c !== null);
       const empty = 5 - existing.length;
-      // 원본: startRankIdx = Math.floor(Math.random() * (RANKS.length - 4)) → 0,1,2 중 하나
       const start = Math.floor(Math.random() * (VALUES.length - 4));
       const straight = VALUES.slice(start, start + 5);
-
       const required = new Set(straight);
       existing.forEach(c => required.delete(c.value));
       if (required.size !== empty) { ok = false; break; }
 
       const toPlace: Card[] = [];
       for (const value of required) {
-        // 원본: deckArr.find(c => c.rank === rank) — rank가 맞는 카드 아무거나
         const idx = deckArr.findIndex(c => c.value === value);
         if (idx !== -1) { toPlace.push(deckArr.splice(idx, 1)[0]); }
         else { ok = false; break; }
       }
       if (!ok || toPlace.length !== empty) { ok = false; break; }
-
       const emptyIdxs = board[r].map((c, i) => c === null ? i : -1).filter(i => i !== -1);
       emptyIdxs.forEach((idx, i) => { board[r][idx] = toPlace[i]; });
     }
     if (!ok) continue;
 
-    // 나머지 셀 채우기
     for (let r = 0; r < 5; r++) {
       for (let c = 0; c < 5; c++) {
         if (!board[r][c]) {
@@ -180,23 +169,16 @@ function generateBoard(): Card[][] {
     if (!ok) continue;
 
     const final = board as Card[][];
-
-    // 검증: 플러시 ≥ 2개, 스트레이트 ≥ 3개
     let fc = 0, sc = 0;
     for (let c = 0; c < 5; c++) if (evalHand(final.map(row => row[c])).name.includes("Flush")) fc++;
     for (let r = 0; r < 5; r++) if (evalHand(final[r]).name.includes("Straight")) sc++;
-
-    if (fc >= 2 && sc >= 3) {
-      // 원본: shouldTranspose = Math.random() < 0.5 → 행/열 무작위 전치
-      return Math.random() < 0.5 ? transpose(final) : final;
-    }
+    if (fc >= 2 && sc >= 3) return Math.random() < 0.5 ? transpose(final) : final;
   }
-  console.warn("Board generation failed after 500 attempts.");
   return fallbackBoard();
 }
 
 // ============================================================
-// DISPLAY STATE (원본: 50개 슬롯 = suit/rank 독립 노출)
+// DISPLAY STATE (suit/rank 독립 노출, 50 슬롯)
 // ============================================================
 function makeDisplay(diff: Difficulty): CellDisplay[][] {
   const hidden = HIDDEN[diff];
@@ -211,7 +193,7 @@ function makeDisplay(diff: Difficulty): CellDisplay[][] {
 }
 
 // ============================================================
-// UI COMPONENTS
+// UI: 족보 배지
 // ============================================================
 const HAND_CLR: Record<number, string> = {
   9: "bg-yellow-400 text-yellow-900",
@@ -228,43 +210,49 @@ const HAND_CLR: Record<number, string> = {
 
 function HandBadge({ hand }: { hand: HandResult }) {
   return (
-    <span className={`${HAND_CLR[hand.rank] ?? HAND_CLR[0]} text-[11px] px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap leading-tight`}>
+    <span className={`${HAND_CLR[hand.rank] ?? HAND_CLR[0]} text-xs px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap`}>
       {hand.name}
     </span>
   );
 }
 
+// ============================================================
+// UI: 카드 (가로형 레이아웃)
+// ============================================================
 function CardFace({ card }: { card: Card }) {
-  const sc = SUIT_CLR[card.suit];
+  const sc = SUIT_CLR_LIGHT[card.suit];
   return (
-    <div className="flex flex-col items-center justify-between h-full py-1 select-none">
-      <span className={`text-sm font-bold font-mono leading-none ${sc}`}>{card.value}</span>
-      <span className={`text-2xl leading-none ${sc}`}>{SUIT_SYM[card.suit]}</span>
-      <span className={`text-sm font-bold font-mono leading-none rotate-180 ${sc}`}>{card.value}</span>
+    <div className="flex items-center justify-center gap-1 select-none w-full h-full">
+      <span className={`text-xl font-bold leading-none ${sc}`}>{SUIT_SYM[card.suit]}</span>
+      <span className={`text-base font-bold font-mono leading-none ${sc}`}>{card.value}</span>
     </div>
   );
 }
 
+// ============================================================
+// UI: 규칙 모달
+// ============================================================
 function RulesModal({ t, onClose }: { t: Translations; onClose: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
         <h2 className="text-white font-bold text-lg mb-4">{t.how_to_play}</h2>
         <p className="text-slate-300 text-sm leading-relaxed mb-6">{t.rules_text}</p>
-        <button onClick={onClose} className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors">OK</button>
+        <button onClick={onClose} className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">OK</button>
       </div>
     </div>
   );
 }
 
 // ============================================================
-// MAIN COMPONENT
+// 메인 컴포넌트
 // ============================================================
 export default function CrossPokerGame({ translations: t }: { translations: Translations }) {
   const [gs, setGs] = useState<GameState | null>(null);
   const [showDiff, setShowDiff] = useState(true);
   const [showRules, setShowRules] = useState(false);
-  const [checked, setChecked] = useState<{ suit: boolean; value: boolean }[][] | null>(null);
+  // 오답 시에만 셀 하이라이트. 정답 시에는 null (대안 정답 보호)
+  const [wrongCells, setWrongCells] = useState<{ suit: boolean; value: boolean }[][] | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [timerOn, setTimerOn] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -289,7 +277,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
       answers: Array.from({length:5}, () => Array.from({length:5}, () => ({suit:"", value:""}))),
       status: "playing", hints: 0, difficulty: diff, history: [],
     });
-    setChecked(null);
+    setWrongCells(null);
     setElapsed(0);
     setTimerOn(true);
     setShowDiff(false);
@@ -308,7 +296,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
         history: [...prev.history, {row, col, field, prev: old}],
       };
     });
-    setChecked(null);
+    setWrongCells(null);
   }, []);
 
   const handleUndo = useCallback(() => {
@@ -324,13 +312,12 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
         history: hist,
       };
     });
-    setChecked(null);
+    setWrongCells(null);
   }, []);
 
   const handleHint = useCallback(() => {
     setGs(prev => {
       if (!prev || prev.hints >= MAX_HINTS) return prev;
-      // 원본 giveHint: 모든 hidden input 중 무작위 1개 공개
       const cands: {r:number; c:number; f:"suit"|"value"}[] = [];
       for (let r=0; r<5; r++) for (let c=0; c<5; c++) {
         if (!prev.display[r][c].showSuit && prev.answers[r][c].suit !== prev.board[r][c].suit)
@@ -349,74 +336,85 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
         hints: prev.hints + 1,
       };
     });
-    setChecked(null);
+    setWrongCells(null);
   }, []);
 
+  // ---- 정답 확인 ----
+  // 핵심: 족보 비교로 판정 (원본 방식) → 대안 정답도 인정
+  // 정답 시: wrongCells = null (셀 하이라이트 없음)
+  // 오답 시: wrongCells = 직접 비교 결과 (어떤 셀이 틀렸는지 힌트)
   const handleCheck = useCallback(() => {
-    setGs(prev => {
-      if (!prev) return prev;
+    if (!gs) return;
+    const { board, display, answers, hands } = gs;
 
-      // 사용자 보드 구성
-      const userBoard: (Card | null)[][] = Array.from({length:5}, (_,r) =>
-        Array.from({length:5}, (_,c) => {
-          const s = prev.display[r][c].showSuit ? prev.board[r][c].suit : prev.answers[r][c].suit;
-          const v = prev.display[r][c].showRank ? prev.board[r][c].value : prev.answers[r][c].value;
-          return (s && v) ? {suit: s as Suit, value: v as Value} : null;
-        })
-      );
+    // 사용자 보드 구성
+    const userBoard: (Card | null)[][] = Array.from({length:5}, (_,r) =>
+      Array.from({length:5}, (_,c) => {
+        const s = display[r][c].showSuit ? board[r][c].suit : answers[r][c].suit;
+        const v = display[r][c].showRank ? board[r][c].value : answers[r][c].value;
+        return (s && v) ? {suit: s as Suit, value: v as Value} : null;
+      })
+    );
 
-      // 미완성 체크
-      if (userBoard.some(row => row.some(c => c === null))) {
-        return {...prev, status: "incorrect"};
+    // 미완성 체크
+    if (userBoard.some(row => row.some(c => c === null))) {
+      setGs(prev => prev ? {...prev, status: "incorrect"} : prev);
+      return;
+    }
+    const complete = userBoard as Card[][];
+
+    // 중복 체크
+    const seen = new Set<string>();
+    for (let r=0; r<5; r++) for (let c=0; c<5; c++) {
+      const k = `${complete[r][c].suit}|${complete[r][c].value}`;
+      if (seen.has(k)) {
+        setGs(prev => prev ? {...prev, status: "incorrect"} : prev);
+        return;
       }
-      const complete = userBoard as Card[][];
+      seen.add(k);
+    }
 
-      // 중복 체크
-      const seen = new Set<string>();
-      for (let r=0; r<5; r++) for (let c=0; c<5; c++) {
-        const k = `${complete[r][c].suit}|${complete[r][c].value}`;
-        if (seen.has(k)) return {...prev, status: "incorrect"};
-        seen.add(k);
-      }
+    // 족보 비교 (원본과 동일: 개별 카드가 아닌 족보로 판정)
+    const userHands = allHands(complete);
+    const match = userHands.every((h, i) => h.name === hands[i].name);
 
-      // 족보 비교 (원본 checkAnswers와 동일)
-      const userHands = allHands(complete);
-      const match = userHands.every((h, i) => h.name === prev.hands[i].name);
-
-      // 셀별 피드백 (직접 비교)
-      const cc = Array.from({length:5}, (_,r) =>
+    if (match) {
+      // 정답: 셀 하이라이트 없음 (대안 정답 보호)
+      setWrongCells(null);
+      setTimerOn(false);
+      setGs(prev => prev ? {...prev, status: "correct"} : prev);
+    } else {
+      // 오답: 직접 비교로 틀린 셀 표시 (어느 셀을 고쳐야 하는지 힌트)
+      const wc = Array.from({length:5}, (_,r) =>
         Array.from({length:5}, (_,c) => ({
-          suit: prev.display[r][c].showSuit || prev.answers[r][c].suit === prev.board[r][c].suit,
-          value: prev.display[r][c].showRank || prev.answers[r][c].value === prev.board[r][c].value,
+          suit: display[r][c].showSuit || answers[r][c].suit === board[r][c].suit,
+          value: display[r][c].showRank || answers[r][c].value === board[r][c].value,
         }))
       );
-      setChecked(cc);
-
-      if (match) setTimerOn(false);
-      return {...prev, status: match ? "correct" : "incorrect"};
-    });
-  }, []);
+      setWrongCells(wc);
+      setGs(prev => prev ? {...prev, status: "incorrect"} : prev);
+    }
+  }, [gs]);
 
   const handleReveal = useCallback(() => {
-    setGs(prev => {
-      if (!prev) return prev;
-      const cc = Array.from({length:5}, (_,r) =>
-        Array.from({length:5}, (_,c) => ({
-          suit: prev.display[r][c].showSuit || prev.answers[r][c].suit === prev.board[r][c].suit,
-          value: prev.display[r][c].showRank || prev.answers[r][c].value === prev.board[r][c].value,
-        }))
-      );
-      setChecked(cc);
-      setTimerOn(false);
-      return {
-        ...prev,
-        display: Array.from({length:5}, () => Array.from({length:5}, () => ({showSuit:true, showRank:true}))),
-        status: "idle",
-      };
-    });
-  }, []);
+    if (!gs) return;
+    const { board, display, answers } = gs;
+    const wc = Array.from({length:5}, (_,r) =>
+      Array.from({length:5}, (_,c) => ({
+        suit: display[r][c].showSuit || answers[r][c].suit === board[r][c].suit,
+        value: display[r][c].showRank || answers[r][c].value === board[r][c].value,
+      }))
+    );
+    setWrongCells(wc);
+    setTimerOn(false);
+    setGs(prev => prev ? {
+      ...prev,
+      display: Array.from({length:5}, () => Array.from({length:5}, () => ({showSuit:true, showRank:true}))),
+      status: "idle",
+    } : prev);
+  }, [gs]);
 
-  // 카드 사용 현황 (suit+rank 모두 확정된 카드만 카운트)
+  // 카드 사용 현황
   const usage = (() => {
     if (!gs) return {} as Record<string,number>;
     const u: Record<string,number> = {};
@@ -435,7 +433,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
           <div className="text-5xl mb-4">🃏</div>
           <h1 className="text-3xl font-bold text-white mb-2">{t.title}</h1>
-          <p className="text-slate-400 text-sm mb-8">{t.subtitle}</p>
+          <p className="text-slate-400 mb-8">{t.subtitle}</p>
           <p className="text-slate-300 font-semibold mb-4">{t.difficulty_select}</p>
           <div className="grid grid-cols-3 gap-3 mb-6">
             {(["easy","medium","hard"] as Difficulty[]).map(d => (
@@ -458,11 +456,11 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
   const { board, display, answers, hands, status, hints, difficulty } = gs;
 
   return (
-    <div className="min-h-screen bg-slate-900 py-6 px-2 sm:px-4">
+    <div className="min-h-[100dvh] bg-slate-900 py-4 px-2 sm:px-4 flex flex-col">
       {/* 헤더 */}
-      <div className="max-w-4xl mx-auto mb-4 flex items-center justify-between">
+      <div className="max-w-4xl mx-auto w-full mb-3 flex items-center justify-between flex-shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-white">{t.title}</h1>
+          <h1 className="text-xl font-bold text-white">{t.title}</h1>
           <p className="text-slate-400 text-sm">
             {t.difficulty}: <span className="text-emerald-400 font-semibold">{t[difficulty]}</span>
             {" · "}{t.time}: <span className="text-emerald-400 font-mono font-semibold">{fmt(elapsed)}</span>
@@ -470,9 +468,9 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowRules(true)}
-            className="text-sm text-slate-400 hover:text-white border border-slate-700 rounded-lg px-3 py-2 transition-colors">?</button>
+            className="text-slate-400 hover:text-white border border-slate-700 rounded-lg px-3 py-1.5 transition-colors">?</button>
           <button onClick={() => { setShowDiff(true); setTimerOn(false); }}
-            className="text-sm text-slate-300 hover:text-white border border-slate-700 rounded-lg px-3 py-2 transition-colors">
+            className="text-sm text-slate-300 hover:text-white border border-slate-700 rounded-lg px-3 py-1.5 transition-colors">
             {t.new_game}
           </button>
         </div>
@@ -480,30 +478,32 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
 
       {/* 상태 배너 */}
       {status === "correct" && (
-        <div className="max-w-4xl mx-auto mb-4 bg-emerald-700 border border-emerald-500 rounded-xl px-4 py-3 text-white text-center font-semibold">
+        <div className="max-w-4xl mx-auto w-full mb-3 bg-emerald-700 border border-emerald-500 rounded-xl px-4 py-2.5 text-white text-center font-semibold flex-shrink-0">
           🎉 {t.correct_message}
         </div>
       )}
       {status === "incorrect" && (
-        <div className="max-w-4xl mx-auto mb-4 bg-red-900/60 border border-red-700 rounded-xl px-4 py-3 text-red-200 text-center">
+        <div className="max-w-4xl mx-auto w-full mb-3 bg-red-900/60 border border-red-700 rounded-xl px-4 py-2.5 text-red-200 text-center flex-shrink-0">
           {t.incorrect_message}
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto flex flex-col lg:flex-row gap-4 items-start">
-        {/* ---- 게임 보드 ---- */}
-        <div className="flex-1 w-full">
-          {/*
-            6열 그리드: [카드0][카드1][카드2][카드3][카드4][행족보]
-            Row 0 (위): [col-span-5 빈칸][반대각선 우상단 -45°]
-            Row 1-5 (카드행)
-            Row 6 (아래): [열족보 0-4][주대각선 우하단 +45°]
-          */}
-          <div className="grid grid-cols-6 gap-1.5">
+      {/* 본문: 보드 + 트래커 */}
+      <div className="max-w-4xl mx-auto w-full flex flex-col lg:flex-row gap-3 flex-1 min-h-0">
 
-            {/* 반대각선 레이블 — 우상단, -45° 회전 (↗ 방향) */}
+        {/* ── 게임 보드 ── */}
+        <div className="flex-1 flex flex-col min-h-0">
+          {/*
+            6열 그리드
+            Row 0: [빈 칸 5개] [반대각선 우상단, -45°]
+            Row 1-5: [카드 5개] [행족보]
+            Row 6: [열족보 5개] [주대각선 우하단, +45°]
+            카드: aspect-[3/2] (가로형, 높이 축소)
+          */}
+          <div className="grid grid-cols-6 gap-1">
+            {/* 반대각선 — 우상단 */}
             <div className="col-span-5" />
-            <div className="flex items-center justify-center py-1 min-h-10">
+            <div className="flex items-center justify-center h-8">
               <span className="-rotate-45 inline-block">
                 <HandBadge hand={hands[11]} />
               </span>
@@ -517,15 +517,15 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                   const card = board[row][col];
                   const ua = answers[row][col];
                   const full = ds.showSuit && ds.showRank;
-                  const cc = checked?.[row][col];
-                  const sWrong = !ds.showSuit && !!cc && !cc.suit;
-                  const vWrong = !ds.showRank && !!cc && !cc.value;
+                  const wc = wrongCells?.[row][col];
+                  const sWrong = !ds.showSuit && !!wc && !wc.suit;
+                  const vWrong = !ds.showRank && !!wc && !wc.value;
                   const anyWrong = sWrong || vWrong;
-                  const allRight = !!cc && !anyWrong && !full;
+                  const allRight = !!wc && !anyWrong && !full;
 
                   return (
                     <div key={`${row}-${col}`}
-                      className={`aspect-[3/4] rounded-lg border-2 flex items-center justify-center transition-colors
+                      className={`aspect-[3/2] rounded-md border-2 flex items-center justify-center overflow-hidden
                         ${full
                           ? "bg-white border-slate-200 shadow-sm"
                           : anyWrong
@@ -538,32 +538,31 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                       {full ? (
                         <CardFace card={card} />
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-1">
-                          {/* Suit 행 */}
+                        // 가로형 레이아웃: suit과 value를 나란히
+                        <div className="flex items-center justify-center gap-0.5 px-1 w-full">
                           {ds.showSuit ? (
-                            <span className={`text-xl leading-none font-bold ${SUIT_CLR[card.suit]}`}>
+                            <span className={`text-lg font-bold leading-none flex-shrink-0 ${SUIT_CLR_LIGHT[card.suit]}`}>
                               {SUIT_SYM[card.suit]}
                             </span>
                           ) : (
                             <select value={ua.suit}
                               onChange={e => handleChange(row, col, "suit", e.target.value)}
-                              className={`w-full text-sm bg-slate-600 border ${sWrong ? "border-red-500" : "border-slate-500"} text-slate-200 rounded py-0.5 text-center focus:outline-none focus:border-emerald-400 cursor-pointer`}
+                              className={`flex-1 min-w-0 text-sm bg-slate-600 border ${sWrong ? "border-red-500" : "border-slate-500"} text-slate-200 rounded py-1 text-center focus:outline-none focus:border-emerald-400 cursor-pointer`}
                             >
-                              <option value="">-</option>
+                              <option value="">?</option>
                               {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
                             </select>
                           )}
-                          {/* Value 행 */}
                           {ds.showRank ? (
-                            <span className={`text-base font-bold font-mono leading-none ${SUIT_CLR[card.suit]}`}>
+                            <span className={`text-sm font-bold font-mono leading-none flex-shrink-0 ${SUIT_CLR_LIGHT[card.suit]}`}>
                               {card.value}
                             </span>
                           ) : (
                             <select value={ua.value}
                               onChange={e => handleChange(row, col, "value", e.target.value)}
-                              className={`w-full text-sm bg-slate-600 border ${vWrong ? "border-red-500" : "border-slate-500"} text-slate-200 rounded py-0.5 text-center focus:outline-none focus:border-emerald-400 cursor-pointer`}
+                              className={`flex-1 min-w-0 text-sm bg-slate-600 border ${vWrong ? "border-red-500" : "border-slate-500"} text-slate-200 rounded py-1 text-center focus:outline-none focus:border-emerald-400 cursor-pointer`}
                             >
-                              <option value="">-</option>
+                              <option value="">?</option>
                               {VALUES.map(v => <option key={v} value={v}>{v}</option>)}
                             </select>
                           )}
@@ -572,20 +571,20 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                     </div>
                   );
                 })}
-                {/* 행 족보 레이블 */}
-                <div className="flex items-center pl-1.5">
+                {/* 행 족보 */}
+                <div className="flex items-center pl-1">
                   <HandBadge hand={hands[row]} />
                 </div>
               </React.Fragment>
             ))}
 
-            {/* 열 족보 레이블 + 주대각선 레이블 — 우하단, +45° 회전 (↘ 방향) */}
+            {/* 열 족보 + 주대각선 — 우하단 */}
             {[0,1,2,3,4].map(col => (
-              <div key={col} className="flex items-center justify-center pt-1.5">
+              <div key={col} className="flex items-center justify-center pt-1">
                 <HandBadge hand={hands[5+col]} />
               </div>
             ))}
-            <div className="flex items-center justify-center pt-1.5 min-h-10">
+            <div className="flex items-center justify-center pt-1 h-8">
               <span className="rotate-45 inline-block">
                 <HandBadge hand={hands[10]} />
               </span>
@@ -593,78 +592,97 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
           </div>
 
           {/* 버튼 */}
-          <div className="flex gap-2 mt-4 flex-wrap">
+          <div className="flex gap-1.5 mt-3 flex-shrink-0">
             <button onClick={handleCheck}
-              className="flex-1 min-w-[80px] py-3 bg-emerald-700 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-colors">
+              className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-colors">
               {t.check}
             </button>
             <button onClick={handleHint} disabled={hints >= MAX_HINTS}
-              className="flex-1 min-w-[80px] py-3 bg-amber-700 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors">
+              className="flex-1 py-2.5 bg-amber-700 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors">
               {t.hint} ({MAX_HINTS - hints})
             </button>
             <button onClick={handleUndo} disabled={!gs.history.length}
-              className="flex-1 min-w-[80px] py-3 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-semibold rounded-xl transition-colors">
+              className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-bold rounded-xl transition-colors">
               {t.undo}
             </button>
             <button onClick={handleReveal}
-              className="flex-1 min-w-[80px] py-3 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold rounded-xl transition-colors">
+              className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold rounded-xl transition-colors">
               {t.reveal_all}
             </button>
           </div>
         </div>
 
-        {/* ---- 카드 트래커 ---- */}
-        <div className="lg:w-52 w-full">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-3">
-            <h3 className="text-slate-300 text-sm font-semibold mb-3 uppercase tracking-wider">
-              {t.card_tracker}
-            </h3>
-            <div className="space-y-2">
-              {SUITS.map(suit => (
-                <div key={suit}>
-                  <div className={`text-sm font-bold mb-1 ${SUIT_CLR[suit]}`}>{SUIT_SYM[suit]}</div>
-                  <div className="grid grid-cols-7 gap-0.5">
-                    {VALUES.map(value => {
-                      const k = `${suit}|${value}`;
-                      const cnt = usage[k] || 0;
-                      const onBoard = board.some(row => row.some(c => c.suit===suit && c.value===value));
-                      const fullyRevealed = onBoard && board.some((row,r) =>
-                        row.some((c,col) =>
-                          c.suit===suit && c.value===value &&
-                          display[r][col].showSuit && display[r][col].showRank
-                        )
-                      );
-                      return (
-                        <div key={value} title={`${value}${SUIT_SYM[suit]}`}
-                          className={`text-[11px] font-mono text-center rounded py-0.5
-                            ${!onBoard ? "bg-slate-900 text-slate-600"
-                              : cnt > 1 ? "bg-red-800 text-red-200"
-                              : fullyRevealed ? "bg-slate-600 text-slate-300"
-                              : cnt === 1 ? "bg-emerald-800 text-emerald-200"
-                              : "bg-slate-700 text-slate-400"
-                            }`}
-                        >
-                          {value === "10" ? "T" : value}
-                        </div>
-                      );
-                    })}
-                  </div>
+        {/* ── 카드 트래커 (원본 스타일: 텍스트 + ✓/❗) ── */}
+        <div className="lg:w-44 flex-shrink-0">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 h-full">
+            <p className="text-slate-300 text-xs font-bold mb-2 uppercase tracking-wider">{t.card_tracker}</p>
+            {/* 4열: ♠ ♥ ♦ ♣ 헤더 */}
+            <div className="grid grid-cols-4 gap-x-1 gap-y-0.5">
+              {SUITS.map(s => (
+                <div key={s} className={`text-center text-base font-bold pb-1 border-b border-slate-600 ${SUIT_CLR_DARK[s]}`}>
+                  {SUIT_SYM[s]}
                 </div>
               ))}
+              {/* 7행 × 4열 카드 셀 */}
+              {VALUES.map(value =>
+                SUITS.map(suit => {
+                  const k = `${suit}|${value}`;
+                  const cnt = usage[k] || 0;
+                  const onBoard = board.some(row => row.some(c => c.suit===suit && c.value===value));
+                  const fullyShown = onBoard && board.some((row,r) =>
+                    row.some((c,col) => c.suit===suit && c.value===value && display[r][col].showSuit && display[r][col].showRank)
+                  );
+
+                  // 표시 상태 결정
+                  const suitClr = SUIT_CLR_DARK[suit];
+                  let label: string;
+                  let labelClr: string;
+                  let statusIcon: string;
+                  let statusClr: string;
+
+                  if (!onBoard) {
+                    // 보드에 없는 카드 (28 중 3장)
+                    label = value === "10" ? "T" : value;
+                    labelClr = "text-slate-600";
+                    statusIcon = "";
+                    statusClr = "";
+                  } else if (cnt > 1) {
+                    // 중복
+                    label = value === "10" ? "T" : value;
+                    labelClr = suitClr;
+                    statusIcon = "!";
+                    statusClr = "text-red-400 font-black";
+                  } else if (cnt === 1) {
+                    // 1회 사용 (공개됐거나 유저 입력)
+                    label = value === "10" ? "T" : value;
+                    labelClr = fullyShown ? "text-slate-500" : suitClr;
+                    statusIcon = "✓";
+                    statusClr = fullyShown ? "text-slate-500" : "text-emerald-400";
+                  } else {
+                    // 미확인
+                    label = value === "10" ? "T" : value;
+                    labelClr = onBoard ? suitClr + " opacity-50" : "text-slate-600";
+                    statusIcon = "";
+                    statusClr = "";
+                  }
+
+                  return (
+                    <div key={`${suit}|${value}`}
+                      className="flex items-center justify-center gap-0.5 py-0.5">
+                      <span className={`text-sm font-bold font-mono leading-none ${labelClr}`}>{label}</span>
+                      {statusIcon && (
+                        <span className={`text-xs leading-none ${statusClr}`}>{statusIcon}</span>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
-            <div className="mt-3 pt-3 border-t border-slate-700 text-xs text-slate-500 space-y-1">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-slate-600 inline-block" />{t.legend_revealed}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-emerald-800 inline-block" />{t.legend_entered}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-red-800 inline-block" />{t.legend_duplicate}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-slate-900 inline-block" />{t.legend_not_used}
-              </div>
+            {/* 범례 */}
+            <div className="mt-2 pt-2 border-t border-slate-700 text-xs text-slate-500 space-y-0.5">
+              <div><span className="text-emerald-400">✓</span> {t.legend_entered}</div>
+              <div><span className="text-red-400 font-black">!</span> {t.legend_duplicate}</div>
+              <div><span className="text-slate-500">✓</span> {t.legend_revealed}</div>
             </div>
           </div>
         </div>
