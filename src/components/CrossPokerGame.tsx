@@ -18,7 +18,7 @@ interface GameState {
   board: Card[][];
   display: CellDisplay[][];
   answers: UserCell[][];
-  hands: HandResult[];   // [row0-4, col0-4, mainDiag(10), antiDiag(11)]
+  hands: HandResult[];
   status: "playing" | "correct" | "incorrect" | "idle";
   hints: number;
   difficulty: Difficulty;
@@ -42,10 +42,7 @@ interface Translations {
 const SUITS: Suit[] = ["S", "H", "D", "C"];
 const VALUES: Value[] = ["8", "9", "10", "J", "Q", "K", "A"];
 const SUIT_SYM: Record<Suit, string> = { S: "♠", H: "♥", D: "♦", C: "♣" };
-// 카드 (흰 배경): 스페이드/클럽 = 짙은 회색, 하트/다이아 = 빨강
-const SUIT_CLR_LIGHT: Record<Suit, string> = { S: "text-slate-800", H: "text-red-600", D: "text-red-600", C: "text-slate-800" };
-// 트래커 (어두운 배경): 스페이드/클럽 = 밝은 회색, 하트/다이아 = 밝은 빨강
-const SUIT_CLR_DARK: Record<Suit, string> = { S: "text-slate-200", H: "text-red-400", D: "text-red-400", C: "text-slate-200" };
+const SUIT_CLR: Record<Suit, string> = { S: "text-slate-800", H: "text-red-600", D: "text-red-600", C: "text-slate-800" };
 const HIDDEN: Record<Difficulty, number> = { easy: 16, medium: 19, hard: 22 };
 const MAX_HINTS = 3;
 
@@ -84,7 +81,7 @@ function allHands(b: Card[][]): HandResult[] {
 }
 
 // ============================================================
-// BOARD GENERATION (원본 generateSpecialBoard 로직)
+// BOARD GENERATION
 // ============================================================
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -205,7 +202,7 @@ const HAND_CLR: Record<number, string> = {
   3: "bg-sky-500 text-white",
   2: "bg-sky-400 text-white",
   1: "bg-slate-400 text-white",
-  0: "bg-slate-300 text-slate-700",
+  0: "bg-slate-200 text-slate-600",
 };
 
 function HandBadge({ hand }: { hand: HandResult }) {
@@ -217,28 +214,15 @@ function HandBadge({ hand }: { hand: HandResult }) {
 }
 
 // ============================================================
-// UI: 카드 (가로형 레이아웃)
-// ============================================================
-function CardFace({ card }: { card: Card }) {
-  const sc = SUIT_CLR_LIGHT[card.suit];
-  return (
-    <div className="flex items-center justify-center gap-1 select-none w-full h-full">
-      <span className={`text-xl font-bold leading-none ${sc}`}>{SUIT_SYM[card.suit]}</span>
-      <span className={`text-base font-bold font-mono leading-none ${sc}`}>{card.value}</span>
-    </div>
-  );
-}
-
-// ============================================================
 // UI: 규칙 모달
 // ============================================================
 function RulesModal({ t, onClose }: { t: Translations; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
-        <h2 className="text-white font-bold text-lg mb-4">{t.how_to_play}</h2>
-        <p className="text-slate-300 text-sm leading-relaxed mb-6">{t.rules_text}</p>
-        <button onClick={onClose} className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">OK</button>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white border border-gray-200 rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={e => e.stopPropagation()}>
+        <h2 className="text-gray-900 font-bold text-lg mb-4">{t.how_to_play}</h2>
+        <p className="text-gray-600 text-sm leading-relaxed mb-6">{t.rules_text}</p>
+        <button onClick={onClose} className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg transition-colors font-medium">OK</button>
       </div>
     </div>
   );
@@ -251,7 +235,6 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
   const [gs, setGs] = useState<GameState | null>(null);
   const [showDiff, setShowDiff] = useState(true);
   const [showRules, setShowRules] = useState(false);
-  // 오답 시에만 셀 하이라이트. 정답 시에는 null (대안 정답 보호)
   const [wrongCells, setWrongCells] = useState<{ suit: boolean; value: boolean }[][] | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [timerOn, setTimerOn] = useState(false);
@@ -339,15 +322,10 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
     setWrongCells(null);
   }, []);
 
-  // ---- 정답 확인 ----
-  // 핵심: 족보 비교로 판정 (원본 방식) → 대안 정답도 인정
-  // 정답 시: wrongCells = null (셀 하이라이트 없음)
-  // 오답 시: wrongCells = 직접 비교 결과 (어떤 셀이 틀렸는지 힌트)
   const handleCheck = useCallback(() => {
     if (!gs) return;
     const { board, display, answers, hands } = gs;
 
-    // 사용자 보드 구성
     const userBoard: (Card | null)[][] = Array.from({length:5}, (_,r) =>
       Array.from({length:5}, (_,c) => {
         const s = display[r][c].showSuit ? board[r][c].suit : answers[r][c].suit;
@@ -356,35 +334,27 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
       })
     );
 
-    // 미완성 체크
     if (userBoard.some(row => row.some(c => c === null))) {
       setGs(prev => prev ? {...prev, status: "incorrect"} : prev);
       return;
     }
     const complete = userBoard as Card[][];
 
-    // 중복 체크
     const seen = new Set<string>();
     for (let r=0; r<5; r++) for (let c=0; c<5; c++) {
       const k = `${complete[r][c].suit}|${complete[r][c].value}`;
-      if (seen.has(k)) {
-        setGs(prev => prev ? {...prev, status: "incorrect"} : prev);
-        return;
-      }
+      if (seen.has(k)) { setGs(prev => prev ? {...prev, status: "incorrect"} : prev); return; }
       seen.add(k);
     }
 
-    // 족보 비교 (원본과 동일: 개별 카드가 아닌 족보로 판정)
     const userHands = allHands(complete);
     const match = userHands.every((h, i) => h.name === hands[i].name);
 
     if (match) {
-      // 정답: 셀 하이라이트 없음 (대안 정답 보호)
       setWrongCells(null);
       setTimerOn(false);
       setGs(prev => prev ? {...prev, status: "correct"} : prev);
     } else {
-      // 오답: 직접 비교로 틀린 셀 표시 (어느 셀을 고쳐야 하는지 힌트)
       const wc = Array.from({length:5}, (_,r) =>
         Array.from({length:5}, (_,c) => ({
           suit: display[r][c].showSuit || answers[r][c].suit === board[r][c].suit,
@@ -414,7 +384,6 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
     } : prev);
   }, [gs]);
 
-  // 카드 사용 현황
   const usage = (() => {
     if (!gs) return {} as Record<string,number>;
     const u: Record<string,number> = {};
@@ -429,22 +398,22 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
   // ---- 난이도 선택 모달 ----
   if (showDiff || !gs) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-sm w-full text-center shadow-lg">
           <div className="text-5xl mb-4">🃏</div>
-          <h1 className="text-3xl font-bold text-white mb-2">{t.title}</h1>
-          <p className="text-slate-400 mb-8">{t.subtitle}</p>
-          <p className="text-slate-300 font-semibold mb-4">{t.difficulty_select}</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t.title}</h1>
+          <p className="text-gray-500 mb-8">{t.subtitle}</p>
+          <p className="text-gray-700 font-semibold mb-4">{t.difficulty_select}</p>
           <div className="grid grid-cols-3 gap-3 mb-6">
             {(["easy","medium","hard"] as Difficulty[]).map(d => (
               <button key={d} onClick={() => startGame(d)}
-                className="py-4 rounded-xl border border-slate-600 font-semibold text-slate-300 hover:bg-emerald-700 hover:border-emerald-500 hover:text-white transition-all">
-                <div className="text-sm text-slate-400 mb-1">{d==="easy"?"16":d==="medium"?"19":"22"}</div>
+                className="py-4 rounded-xl border-2 border-gray-200 font-semibold text-gray-600 hover:bg-emerald-600 hover:border-emerald-600 hover:text-white transition-all">
+                <div className="text-sm text-gray-400 mb-1">{d==="easy"?"16":d==="medium"?"19":"22"}</div>
                 <div className="text-base">{t[d]}</div>
               </button>
             ))}
           </div>
-          <button onClick={() => setShowRules(true)} className="text-sm text-slate-500 hover:text-slate-300 transition-colors">
+          <button onClick={() => setShowRules(true)} className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
             {t.how_to_play} →
           </button>
         </div>
@@ -455,22 +424,27 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
 
   const { board, display, answers, hands, status, hints, difficulty } = gs;
 
+  // select 공통 클래스 (라이트 테마)
+  const selectBase = "flex-1 min-w-0 text-sm bg-white border border-gray-300 text-gray-800 rounded py-1 text-center focus:outline-none focus:border-blue-400 cursor-pointer";
+  const selectWrong = "flex-1 min-w-0 text-sm bg-white border border-red-400 text-gray-800 rounded py-1 text-center focus:outline-none cursor-pointer";
+
   return (
-    <div className="min-h-[100dvh] bg-slate-900 py-4 px-2 sm:px-4 flex flex-col">
+    <div className="min-h-[100dvh] bg-gray-50 py-4 px-2 sm:px-4 flex flex-col">
+
       {/* 헤더 */}
       <div className="max-w-4xl mx-auto w-full mb-3 flex items-center justify-between flex-shrink-0">
         <div>
-          <h1 className="text-xl font-bold text-white">{t.title}</h1>
-          <p className="text-slate-400 text-sm">
-            {t.difficulty}: <span className="text-emerald-400 font-semibold">{t[difficulty]}</span>
-            {" · "}{t.time}: <span className="text-emerald-400 font-mono font-semibold">{fmt(elapsed)}</span>
+          <h1 className="text-xl font-bold text-gray-900">{t.title}</h1>
+          <p className="text-gray-500 text-sm">
+            {t.difficulty}: <span className="text-emerald-600 font-semibold">{t[difficulty]}</span>
+            {" · "}{t.time}: <span className="text-emerald-600 font-mono font-semibold">{fmt(elapsed)}</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowRules(true)}
-            className="text-slate-400 hover:text-white border border-slate-700 rounded-lg px-3 py-1.5 transition-colors">?</button>
+            className="text-gray-500 hover:text-gray-900 border border-gray-300 rounded-lg px-3 py-1.5 transition-colors bg-white">?</button>
           <button onClick={() => { setShowDiff(true); setTimerOn(false); }}
-            className="text-sm text-slate-300 hover:text-white border border-slate-700 rounded-lg px-3 py-1.5 transition-colors">
+            className="text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg px-3 py-1.5 transition-colors bg-white font-medium">
             {t.new_game}
           </button>
         </div>
@@ -478,12 +452,12 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
 
       {/* 상태 배너 */}
       {status === "correct" && (
-        <div className="max-w-4xl mx-auto w-full mb-3 bg-emerald-700 border border-emerald-500 rounded-xl px-4 py-2.5 text-white text-center font-semibold flex-shrink-0">
+        <div className="max-w-4xl mx-auto w-full mb-3 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-2.5 text-emerald-800 text-center font-semibold flex-shrink-0">
           🎉 {t.correct_message}
         </div>
       )}
       {status === "incorrect" && (
-        <div className="max-w-4xl mx-auto w-full mb-3 bg-red-900/60 border border-red-700 rounded-xl px-4 py-2.5 text-red-200 text-center flex-shrink-0">
+        <div className="max-w-4xl mx-auto w-full mb-3 bg-red-50 border border-red-300 rounded-xl px-4 py-2.5 text-red-700 text-center flex-shrink-0">
           {t.incorrect_message}
         </div>
       )}
@@ -493,14 +467,8 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
 
         {/* ── 게임 보드 ── */}
         <div className="flex-1 flex flex-col min-h-0">
-          {/*
-            6열 그리드
-            Row 0: [빈 칸 5개] [반대각선 우상단, -45°]
-            Row 1-5: [카드 5개] [행족보]
-            Row 6: [열족보 5개] [주대각선 우하단, +45°]
-            카드: aspect-[3/2] (가로형, 높이 축소)
-          */}
-          <div className="grid grid-cols-6 gap-1">
+          <div className="grid grid-cols-6 gap-1.5">
+
             {/* 반대각선 — 우상단 */}
             <div className="col-span-5" />
             <div className="flex items-center justify-center h-8">
@@ -525,47 +493,61 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
 
                   return (
                     <div key={`${row}-${col}`}
-                      className={`aspect-[3/2] rounded-md border-2 flex items-center justify-center overflow-hidden
+                      className={`aspect-[3/2] rounded-lg border-2 flex items-center justify-center overflow-hidden
                         ${full
-                          ? "bg-white border-slate-200 shadow-sm"
+                          ? "bg-white border-gray-200 shadow-sm"
                           : anyWrong
-                          ? "bg-red-950 border-red-600"
+                          ? "bg-red-50 border-red-400"
                           : allRight
-                          ? "bg-emerald-950 border-emerald-600"
-                          : "bg-slate-700 border-slate-600"
+                          ? "bg-emerald-50 border-emerald-400"
+                          : "bg-white border-gray-300 shadow-sm"
                         }`}
                     >
                       {full ? (
-                        <CardFace card={card} />
+                        // 공개된 카드
+                        <div className="flex items-center justify-center gap-1 w-full select-none">
+                          <span className={`text-xl font-bold leading-none ${SUIT_CLR[card.suit]}`}>
+                            {SUIT_SYM[card.suit]}
+                          </span>
+                          <span className={`text-base font-bold font-mono leading-none ${SUIT_CLR[card.suit]}`}>
+                            {card.value}
+                          </span>
+                        </div>
                       ) : (
-                        // 가로형 레이아웃: suit과 value를 나란히
+                        // 숨겨진 카드: 두 슬롯 모두 flex-1로 동일 너비 보장
                         <div className="flex items-center justify-center gap-0.5 px-1 w-full">
-                          {ds.showSuit ? (
-                            <span className={`text-lg font-bold leading-none flex-shrink-0 ${SUIT_CLR_LIGHT[card.suit]}`}>
-                              {SUIT_SYM[card.suit]}
-                            </span>
-                          ) : (
-                            <select value={ua.suit}
-                              onChange={e => handleChange(row, col, "suit", e.target.value)}
-                              className={`flex-1 min-w-0 text-sm bg-slate-600 border ${sWrong ? "border-red-500" : "border-slate-500"} text-slate-200 rounded py-1 text-center focus:outline-none focus:border-emerald-400 cursor-pointer`}
-                            >
-                              <option value="">?</option>
-                              {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
-                            </select>
-                          )}
-                          {ds.showRank ? (
-                            <span className={`text-sm font-bold font-mono leading-none flex-shrink-0 ${SUIT_CLR_LIGHT[card.suit]}`}>
-                              {card.value}
-                            </span>
-                          ) : (
-                            <select value={ua.value}
-                              onChange={e => handleChange(row, col, "value", e.target.value)}
-                              className={`flex-1 min-w-0 text-sm bg-slate-600 border ${vWrong ? "border-red-500" : "border-slate-500"} text-slate-200 rounded py-1 text-center focus:outline-none focus:border-emerald-400 cursor-pointer`}
-                            >
-                              <option value="">?</option>
-                              {VALUES.map(v => <option key={v} value={v}>{v}</option>)}
-                            </select>
-                          )}
+                          {/* Suit 슬롯: 공개된 경우 flex-1 span, 숨겨진 경우 flex-1 select */}
+                          <div className="flex-1 min-w-0 flex items-center justify-center">
+                            {ds.showSuit ? (
+                              <span className={`text-lg font-bold leading-none ${SUIT_CLR[card.suit]}`}>
+                                {SUIT_SYM[card.suit]}
+                              </span>
+                            ) : (
+                              <select value={ua.suit}
+                                onChange={e => handleChange(row, col, "suit", e.target.value)}
+                                className={`w-full ${sWrong ? selectWrong : selectBase}`}
+                              >
+                                <option value="">?</option>
+                                {SUITS.map(s => <option key={s} value={s}>{SUIT_SYM[s]}</option>)}
+                              </select>
+                            )}
+                          </div>
+                          {/* Value 슬롯 */}
+                          <div className="flex-1 min-w-0 flex items-center justify-center">
+                            {ds.showRank ? (
+                              <span className={`text-base font-bold font-mono leading-none ${SUIT_CLR[card.suit]}`}>
+                                {card.value}
+                              </span>
+                            ) : (
+                              <select value={ua.value}
+                                onChange={e => handleChange(row, col, "value", e.target.value)}
+                                className={`w-full ${vWrong ? selectWrong : selectBase}`}
+                              >
+                                <option value="">?</option>
+                                {VALUES.map(v => <option key={v} value={v}>{v}</option>)}
+                              </select>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -578,7 +560,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
               </React.Fragment>
             ))}
 
-            {/* 열 족보 + 주대각선 — 우하단 */}
+            {/* 열 족보 + 주대각선 */}
             {[0,1,2,3,4].map(col => (
               <div key={col} className="flex items-center justify-center pt-1">
                 <HandBadge hand={hands[5+col]} />
@@ -594,36 +576,39 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
           {/* 버튼 */}
           <div className="flex gap-1.5 mt-3 flex-shrink-0">
             <button onClick={handleCheck}
-              className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-colors">
+              className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl transition-colors">
               {t.check}
             </button>
             <button onClick={handleHint} disabled={hints >= MAX_HINTS}
-              className="flex-1 py-2.5 bg-amber-700 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors">
+              className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors">
               {t.hint} ({MAX_HINTS - hints})
             </button>
             <button onClick={handleUndo} disabled={!gs.history.length}
-              className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-bold rounded-xl transition-colors">
+              className="flex-1 py-2.5 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700 text-sm font-bold rounded-xl border border-gray-300 transition-colors">
               {t.undo}
             </button>
             <button onClick={handleReveal}
-              className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold rounded-xl transition-colors">
+              className="flex-1 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-bold rounded-xl border border-gray-300 transition-colors">
               {t.reveal_all}
             </button>
           </div>
         </div>
 
-        {/* ── 카드 트래커 (원본 스타일: 텍스트 + ✓/❗) ── */}
-        <div className="lg:w-44 flex-shrink-0">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 h-full">
-            <p className="text-slate-300 text-xs font-bold mb-2 uppercase tracking-wider">{t.card_tracker}</p>
-            {/* 4열: ♠ ♥ ♦ ♣ 헤더 */}
-            <div className="grid grid-cols-4 gap-x-1 gap-y-0.5">
+        {/* ── 카드 트래커 ── */}
+        <div className="lg:w-40 flex-shrink-0 self-start">
+          <div className="bg-white border border-gray-200 rounded-xl p-2.5 shadow-sm">
+            <p className="text-gray-500 text-xs font-bold mb-2 uppercase tracking-wider">{t.card_tracker}</p>
+
+            {/* 4열 그리드: ♠ ♥ ♦ ♣ */}
+            <div className="grid grid-cols-4 gap-x-0.5">
+              {/* 헤더 */}
               {SUITS.map(s => (
-                <div key={s} className={`text-center text-base font-bold pb-1 border-b border-slate-600 ${SUIT_CLR_DARK[s]}`}>
+                <div key={s} className={`text-center text-sm font-bold pb-1 border-b border-gray-200 ${SUIT_CLR[s]}`}>
                   {SUIT_SYM[s]}
                 </div>
               ))}
-              {/* 7행 × 4열 카드 셀 */}
+
+              {/* 7행 × 4열 */}
               {VALUES.map(value =>
                 SUITS.map(suit => {
                   const k = `${suit}|${value}`;
@@ -633,56 +618,46 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                     row.some((c,col) => c.suit===suit && c.value===value && display[r][col].showSuit && display[r][col].showRank)
                   );
 
-                  // 표시 상태 결정
-                  const suitClr = SUIT_CLR_DARK[suit];
-                  let label: string;
-                  let labelClr: string;
-                  let statusIcon: string;
-                  let statusClr: string;
+                  // 표시
+                  const suitClr = SUIT_CLR[suit];
+                  let cellCls: string;
+                  let icon: string;
 
                   if (!onBoard) {
-                    // 보드에 없는 카드 (28 중 3장)
-                    label = value === "10" ? "T" : value;
-                    labelClr = "text-slate-600";
-                    statusIcon = "";
-                    statusClr = "";
+                    cellCls = "text-gray-300";
+                    icon = "";
                   } else if (cnt > 1) {
-                    // 중복
-                    label = value === "10" ? "T" : value;
-                    labelClr = suitClr;
-                    statusIcon = "!";
-                    statusClr = "text-red-400 font-black";
+                    cellCls = `${suitClr} font-bold`;
+                    icon = "!";
                   } else if (cnt === 1) {
-                    // 1회 사용 (공개됐거나 유저 입력)
-                    label = value === "10" ? "T" : value;
-                    labelClr = fullyShown ? "text-slate-500" : suitClr;
-                    statusIcon = "✓";
-                    statusClr = fullyShown ? "text-slate-500" : "text-emerald-400";
+                    cellCls = fullyShown ? "text-gray-400" : `${suitClr}`;
+                    icon = "✓";
                   } else {
-                    // 미확인
-                    label = value === "10" ? "T" : value;
-                    labelClr = onBoard ? suitClr + " opacity-50" : "text-slate-600";
-                    statusIcon = "";
-                    statusClr = "";
+                    cellCls = `${suitClr} opacity-40`;
+                    icon = "";
                   }
 
                   return (
-                    <div key={`${suit}|${value}`}
-                      className="flex items-center justify-center gap-0.5 py-0.5">
-                      <span className={`text-sm font-bold font-mono leading-none ${labelClr}`}>{label}</span>
-                      {statusIcon && (
-                        <span className={`text-xs leading-none ${statusClr}`}>{statusIcon}</span>
+                    <div key={`${suit}|${value}`} className="flex items-center justify-center gap-px py-0.5">
+                      <span className={`text-xs font-mono leading-none ${cellCls}`}>
+                        {value === "10" ? "T" : value}
+                      </span>
+                      {icon && (
+                        <span className={`text-[9px] leading-none ${cnt > 1 ? "text-red-500 font-black" : fullyShown ? "text-gray-400" : "text-emerald-500"}`}>
+                          {icon}
+                        </span>
                       )}
                     </div>
                   );
                 })
               )}
             </div>
+
             {/* 범례 */}
-            <div className="mt-2 pt-2 border-t border-slate-700 text-xs text-slate-500 space-y-0.5">
-              <div><span className="text-emerald-400">✓</span> {t.legend_entered}</div>
-              <div><span className="text-red-400 font-black">!</span> {t.legend_duplicate}</div>
-              <div><span className="text-slate-500">✓</span> {t.legend_revealed}</div>
+            <div className="mt-2 pt-1.5 border-t border-gray-200 text-xs text-gray-400 space-y-0.5">
+              <div><span className="text-emerald-500">✓</span> {t.legend_entered}</div>
+              <div><span className="text-red-500 font-black">!</span> {t.legend_duplicate}</div>
+              <div><span className="text-gray-400">✓</span> {t.legend_revealed}</div>
             </div>
           </div>
         </div>
