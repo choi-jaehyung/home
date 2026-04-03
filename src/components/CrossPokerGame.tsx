@@ -601,17 +601,14 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
               SUITS.map(suit => {
                 const k = `${suit}|${value}`;
                 const cnt = usage[k] || 0;
-                const onBoard = board.some(row => row.some(c => c.suit===suit && c.value===value));
-                const fullyShown = onBoard && board.some((row,r) =>
+                const fullyShown = board.some((row,r) =>
                   row.some((c,col) => c.suit===suit && c.value===value && display[r][col].showSuit && display[r][col].showRank)
                 );
 
                 let icon: React.ReactNode = null;
                 let labelCls = "";
 
-                if (!onBoard) {
-                  labelCls = "text-gray-300";
-                } else if (cnt > 1) {
+                if (cnt > 1) {
                   labelCls = `${SUIT_CLR[suit]} font-bold`;
                   icon = <span className="text-red-500 font-black text-xs leading-none">❗</span>;
                 } else if (cnt === 1) {
