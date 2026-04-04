@@ -423,9 +423,9 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
 
   // 공개된 select의 색상 클래스
   const revealedSuitCls = (_suit: Suit) =>
-    `w-full flex-1 text-xl bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold`;
+    `w-full flex-1 text-sm md:text-xl bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold`;
   const revealedValCls = (suit: Suit | "") =>
-    `w-full flex-1 text-xl bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold ${suit ? SUIT_CLR[suit as Suit] : "text-gray-400"}`;
+    `w-full flex-1 text-sm md:text-xl bg-gray-200 cursor-not-allowed rounded border-0 text-center appearance-none font-bold ${suit ? SUIT_CLR[suit as Suit] : "text-gray-400"}`;
 
   return (
     <div className="min-h-[100dvh] bg-gray-50 py-3 px-2 sm:px-4 flex flex-col">
@@ -453,8 +453,8 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
             {/* 타이틀 행: col-span-5 타이틀(중앙) + 반대각선 족보 */}
             <div className="grid grid-cols-6 gap-1 mb-1 items-stretch">
               <div className="col-span-5 flex flex-col justify-center items-center text-center px-2 py-1">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight" style={{fontFamily:"Georgia, serif"}}>{t.title}</h1>
-                <div className="flex items-center gap-2 text-xs md:text-sm text-gray-600 mt-0.5">
+                <h1 className="text-lg md:text-2xl lg:text-3xl font-bold text-gray-800 leading-tight" style={{fontFamily:"Georgia, serif"}}>{t.title}</h1>
+                <div className="flex items-center gap-2 text-xs text-gray-600 mt-0.5">
                   <span>{t.difficulty}: <span className="font-semibold">{t[difficulty]}</span></span>
                   <span>·</span>
                   <span className="font-mono font-semibold">{fmt(elapsed)}</span>
@@ -462,7 +462,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                 </div>
               </div>
               <div className="aspect-square rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                <span className="-rotate-45 inline-block text-sm md:text-base px-0.5 leading-tight whitespace-pre-line text-center">{hands[11].name}</span>
+                <span className="-rotate-45 inline-block text-xs md:text-sm lg:text-base px-0.5 leading-tight whitespace-pre-line text-center">{hands[11].name}</span>
               </div>
             </div>
 
@@ -511,7 +511,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                             <select value={ua.suit}
                               onChange={e => handleChange(row, col, "suit", e.target.value)}
                               style={{textAlignLast:"center"}}
-                              className={`w-full flex-1 text-xl bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
+                              className={`w-full flex-1 text-sm md:text-xl bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
                                 ${ua.suit === "" ? "text-blue-600" : "text-gray-900"}
                                 ${sWrong ? "border-red-400" : "border-gray-300"}`}
                             >
@@ -530,7 +530,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                             <select value={ua.value}
                               onChange={e => handleChange(row, col, "value", e.target.value)}
                               style={{textAlignLast:"center"}}
-                              className={`w-full flex-1 text-xl bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
+                              className={`w-full flex-1 text-sm md:text-xl bg-white border rounded text-center appearance-none cursor-pointer focus:outline-none focus:border-blue-400 font-bold
                                 ${ua.value === "" ? "text-blue-600"
                                   : (!ds.showSuit && ua.suit === "") ? "text-gray-400"
                                   : (ds.showSuit ? card.suit : ua.suit) === "H" || (ds.showSuit ? card.suit : ua.suit) === "D" ? "text-red-600"
@@ -548,7 +548,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
                 })}
                 {/* 행 족보 셀 */}
                 <div className="aspect-square rounded-lg shadow-sm bg-yellow-200 text-yellow-800 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                  <span className="text-sm md:text-base px-0.5 whitespace-pre-line">{hands[row].name}</span>
+                  <span className="text-xs md:text-sm lg:text-base px-0.5 whitespace-pre-line">{hands[row].name}</span>
                 </div>
               </div>
             ))}
@@ -557,11 +557,11 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
             <div className="grid grid-cols-6 gap-1">
               {[0,1,2,3,4].map(col => (
                 <div key={col} className="aspect-square rounded-lg shadow-sm bg-yellow-200 text-yellow-800 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                  <span className="text-sm md:text-base px-0.5 whitespace-pre-line">{hands[5+col].name}</span>
+                  <span className="text-xs md:text-sm lg:text-base px-0.5 whitespace-pre-line">{hands[5+col].name}</span>
                 </div>
               ))}
               <div className="aspect-square rounded-lg shadow-sm bg-yellow-400 text-yellow-900 font-bold flex items-center justify-center text-center overflow-hidden leading-tight">
-                <span className="rotate-45 inline-block text-sm md:text-base px-0.5 whitespace-pre-line text-center">{hands[10].name}</span>
+                <span className="rotate-45 inline-block text-xs md:text-sm lg:text-base px-0.5 whitespace-pre-line text-center">{hands[10].name}</span>
               </div>
             </div>
           </div>
