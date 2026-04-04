@@ -592,7 +592,7 @@ export default function CrossPokerGame({ translations: t }: { translations: Tran
         </div>
 
         {/* ── 카드 트래커 ── */}
-        <div className="bg-gray-200 p-3 rounded-lg shadow-lg w-56 flex-shrink-0 self-start">
+        <div className="bg-gray-200 p-3 rounded-lg shadow-lg w-full lg:w-56 flex-shrink-0 self-start">
           <p className="text-gray-600 text-xs font-bold mb-2 uppercase tracking-wider">{t.card_tracker}</p>
 
           {/* 4열 그리드 */}
