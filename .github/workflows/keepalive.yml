@@ -33,7 +33,7 @@ jobs:
           echo "✅ Supabase 정상 — 일시정지 타이머 리셋됨"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 타임스탬프 갱신 후 커밋 (GitHub Actions 스케줄 유지용)
         run: |
